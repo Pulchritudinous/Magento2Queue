@@ -323,9 +323,11 @@ class Labour
     /**
      * Reschedule labour.
      *
+     * @param  boolean $detatch
+     *
      * @return Labour
      */
-    public function reschedule() : Labour
+    public function reschedule(bool $detatch = false) : Labour
     {
         $config = $this->getWorkerConfig();
         $currentAttempts = $this->getAttempts() ?: 0;
@@ -341,6 +343,7 @@ class Labour
         $data = [
             'status' => self::STATUS_PENDING,
             'execute_at' => $when,
+            'parent_id' => (true === $detatch) ? null : $this->getId(),
         ];
 
         $transaction = $this->transactionFactory->create();
