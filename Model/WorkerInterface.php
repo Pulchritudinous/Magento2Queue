@@ -31,5 +31,21 @@ interface WorkerInterface
      * Execute worker.
      */
     public function execute();
+
+    /**
+     * Returns options to pass to $queue->add() function when scheduling
+     * recurring jobs.
+     *
+     * Expected format:
+     * [
+     *      "payload" => [...],
+     *      "options" => [...]
+     * ]
+     *
+     * @param  array $workerConfig
+     *
+     * @return array
+     */
+    public static function getRecurringOptions($worderConfig = []) : array;
 }
 

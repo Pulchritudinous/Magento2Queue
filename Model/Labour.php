@@ -38,6 +38,7 @@ use Pulchritudinous\Queue\Api\Data\LabourInterface;
 use Pulchritudinous\Queue\Exception\RescheduleException;
 use Pulchritudinous\Queue\Helper\Worker\Config as WorkerConfig;
 use Pulchritudinous\Queue\Helper\Worker\Factory As WorkerFactory;
+use Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection as LabourCollection;
 
 class Labour
     extends \Magento\Framework\Model\AbstractModel
@@ -145,14 +146,14 @@ class Labour
      *
      * @var \Pulchritudinous\Queue\Helper\Worker\Config
      */
-    protected $workerConfig = null;
+    protected $workerConfig;
 
     /**
      * Worker factory instance
      *
      * @var \Pulchritudinous\Queue\Helper\Worker\Factory
      */
-    protected $workerFactory = null;
+    protected $workerFactory;
 
     /**
      * Transaction factory
@@ -160,6 +161,13 @@ class Labour
      * @var \Magento\Framework\DB\TransactionFactory
      */
     private $transactionFactory;
+
+    /**
+     * Object manager
+     *
+     * @var \Magento\Framework\ObjectManager
+     */
+    private $objectManager;
 
     /**
      * Labour constructor.
@@ -189,12 +197,15 @@ class Labour
         WorkerConfig $workerConfig = null,
         WorkerFactory $workerFactory = null
     ) {
+        $objectManager = ObjectManager::getInstance();
+
         $this->dataObjectHelper = $dataObjectHelper;
-        $this->arrHelper = $arrHelper ?: ObjectManager::getInstance()->get(ArrayManager::class);
-        $this->transactionFactory = $transactionFactory ?: ObjectManager::getInstance()->get(TransactionFactory::class);
-        $this->logger = $logger ?: ObjectManager::getInstance()->get(LoggerInterface::class);
-        $this->workerConfig = $workerConfig ?: ObjectManager::getInstance()->get(WorkerConfig::class);
-        $this->workerFactory = $workerFactory ?: ObjectManager::getInstance()->get(WorkerFactory::class);
+        $this->arrHelper = $arrHelper ?: $objectManager->get(ArrayManager::class);
+        $this->transactionFactory = $transactionFactory ?: $objectManager->get(TransactionFactory::class);
+        $this->logger = $logger ?: $objectManager->get(LoggerInterface::class);
+        $this->workerConfig = $workerConfig ?: $objectManager->get(WorkerConfig::class);
+        $this->workerFactory = $workerFactory ?: $objectManager->get(WorkerFactory::class);
+        $this->objectManager = $objectManager;
 
         parent::__construct($context, $registry, $resource, $resourceCollection, $data);
     }
@@ -249,15 +260,31 @@ class Labour
         $config = $this->getWorkerConfig();
         $currentAttempts = $this->getAttempts() ?: 0;
 
-        if (self::RULE_BATCH === $this->arrHelper->get('rule', $config) && null !== $this->getParentId()) {
-            return $this;
-        }
-
-        $this->addData([
+        $data = [
             'status' => self::STATUS_RUNNING,
             'started_at' => time(),
+            'pid' => $this->getPid(),
             'attempts' => $currentAttempts + 1,
-        ])->save();
+        ];
+
+        $transaction = $this->transactionFactory->create();
+
+        if (self::RULE_BATCH === $this->arrHelper->get('rule', $config)) {
+            $queueCollection = $this->getBatchCollection();
+
+            foreach ($queueCollection as $bundle) {
+                if ($bundle->getId() != $this->getId()) {
+                    $bundle->addData($data);
+
+                    $transaction->addObject($bundle);
+                }
+            }
+        }
+
+        $this->addData($data);
+
+        $transaction->addObject($this);
+        $transaction->save();
 
         return $this;
     }
@@ -269,12 +296,6 @@ class Labour
      */
     protected function _afterExecute()
     {
-        $config = $this->getWorkerConfig();
-
-        if (self::RULE_BATCH === $this->arrHelper->get('rule', $config) && null !== $this->getParentId()) {
-            return $this;
-        }
-
         $this->setAsFinished();
 
         return $this;
@@ -322,12 +343,10 @@ class Labour
             'execute_at' => $when,
         ];
 
-        $transaction = $this->_transactionFactory->create();
+        $transaction = $this->transactionFactory->create();
 
         if (self::RULE_BATCH === $config->getRule()) {
             $queueCollection = $this->getBatchCollection();
-
-            $this->setChildLabour($queueCollection);
 
             foreach ($queueCollection as $bundle) {
                 if ($bundle->getId() != $this->getId()) {
@@ -353,10 +372,21 @@ class Labour
      */
     public function setAsFinished() : Labour
     {
-        $this->addData([
+        $transaction = $this->transactionFactory->create();
+        $data = [
             'status' => self::STATUS_FINISHED,
             'finished_at' => time(),
-        ])->save();
+        ];
+
+        foreach ($this->getBatchCollection() as $bundle) {
+            $bundle->addData($data);
+            $transaction->addObject($bundle);
+        }
+
+        $this->addData($data);
+
+        $transaction->addObject($this);
+        $transaction->save();
 
         return $this;
     }
@@ -368,11 +398,27 @@ class Labour
      */
     public function setAsFailed() : Labour
     {
-        $this->addData([
+        $transaction = $this->transactionFactory->create();
+        $data = [
             'status' => self::STATUS_FAILED,
-            'started_at' => $this->getStartedAt() ?: time(),
+            'started_at' => time(),
             'finished_at' => time(),
-        ])->save();
+        ];
+
+        $queueCollection = $this->getBatchCollection();
+
+        foreach ($queueCollection as $bundle) {
+            if ($bundle->getId() != $this->getId()) {
+                $bundle->addData($data);
+
+                $transaction->addObject($bundle);
+            }
+        }
+
+        $this->addData($data);
+
+        $transaction->addObject($this);
+        $transaction->save();
 
         return $this;
     }
@@ -386,7 +432,20 @@ class Labour
      */
     protected function _getWhen(int $delay = null) : int
     {
-        return $this->_objectManager->create('Pulchritudinous\Queue\Helper\Data')->getWhen($delay);
+        return $this->objectManager->create('Pulchritudinous\Queue\Helper\Data')->getWhen($delay);
+    }
+
+    /**
+     * Get child collection.
+     *
+     * @return LabourCollection
+     */
+    public function getBatchCollection() : LabourCollection
+    {
+        $collection = $this->objectManager->create('Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection')
+            ->addFieldToFilter('parent_id', ['eq' => $this->getId()]);
+
+        return $collection;
     }
 
     /**

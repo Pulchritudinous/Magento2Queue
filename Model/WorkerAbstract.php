@@ -25,8 +25,8 @@
 
 namespace Pulchritudinous\Queue\Model;
 
-use Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection as LabourCollection;
 use Pulchritudinous\Queue\Exception\RescheduleException;
+use Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection as LabourCollection;
 
 abstract class WorkerAbstract
     implements WorkerInterface
@@ -39,29 +39,13 @@ abstract class WorkerAbstract
     protected $_labour;
 
     /**
-     * Config model.
+     * Initial configuration.
      *
-     * @var array
-     */
-    protected $_config = [];
-
-    /**
-     * Child labour collection.
-     *
-     * @var null|ResourceModel\Labour\Collection
-     */
-    protected $_childLabour = null;
-
-    /**
-     * @param array $config
      * @param Labour $labour
-     * @param LabourCollection|null $children
      */
-    public function __construct(array $config, Labour $labour = null, LabourCollection $children = null)
+    public function __construct(Labour $labour = null)
     {
-        $this->_config = $config;
         $this->_labour = $labour;
-        $this->_childLabour = $children;
     }
 
     /**
@@ -69,7 +53,7 @@ abstract class WorkerAbstract
      *
      * @return null|Labour
      */
-    protected function _getLabour() :? Labour
+    public function getLabour() :? Labour
     {
         return $this->_labour;
     }
@@ -81,17 +65,27 @@ abstract class WorkerAbstract
      */
     public function getPayload() : array
     {
-        return !$this->_getLabour() ? [] : $this->_getLabour()->getPayload();
+        return !$this->getLabour() ? [] : $this->getLabour()->getPayload();
     }
 
     /**
-     * Get child labour collection.
+     * Get worker config.
+     *
+     * @return array
+     */
+    public function getWorkerConfig() : array
+    {
+        return !$this->getLabour() ? [] : $this->getLabour()->getWorkerConfig();
+    }
+
+    /**
+     * Get child collection.
      *
      * @return LabourCollection|null
      */
-    protected function _getChildLabour() : LabourCollection
+    public function getBatchCollection() :? LabourCollection
     {
-        return $this->_childLabour;
+        return !$this->getLabour() ? null : $this->getLabour()->getBatchCollection();
     }
 
     /**
@@ -103,9 +97,8 @@ abstract class WorkerAbstract
      *      "payload" => [...],
      *      "options" => [...]
      * ]
-     * @see Pulchritudinous_Queue_Model_Queue::add()
      *
-     * @param  array $worderConfig
+     * @param  array $workerConfig
      *
      * @return array
      */

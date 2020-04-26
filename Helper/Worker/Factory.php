@@ -70,32 +70,25 @@ class Factory
     /**
      * Load worker forge.
      *
-     * @param null|Pulchritudinous\Queue\Model\Labour $labour
-     * @param LabourCollection|null $children
+     * @param Pulchritudinous\Queue\Model\Labour $labour
      *
      * @return null|WorkerInterface
      */
-    public function create(\Pulchritudinous\Queue\Model\Labour $labour,
-        LabourCollection $children = null
-    ) :? WorkerInterface
+    public function create(\Pulchritudinous\Queue\Model\Labour $labour) :? WorkerInterface
     {
-        $config = $this->workerConfig->getWorkerConfigById($labour->getWorker());
+        $config = $labour->getWorkerConfig();
         $forge = $this->arrHelper->get('forge', $config);
 
         $this->objectManager->configure([
             $forge => [
                 'arguments' => [
-                    'config'    => array_fill_keys(array_keys($config), null),
-                    'labour'    => [],
-                    'children'  => null,
+                    'labour' => null,
                 ]
             ]
         ]);
 
         $object = $this->objectManager->create($forge, [
-            'config'    => $config,
-            'labour'    => $labour,
-            'children'  => $children,
+            'labour' => $labour,
         ]);
 
         if (!$object || !($object instanceof WorkerInterface)) {
@@ -115,19 +108,8 @@ class Factory
     public function createById(string $worker) :? WorkerInterface
     {
         $config = $this->workerConfig->getWorkerConfigById($worker);
-        $forge  = $this->arrHelper->get('forge', $config);
-
-        $this->objectManager->configure([
-            $forge => [
-                'arguments' => [
-                    'config' => array_fill_keys(array_keys($config), null),
-                ]
-            ]
-        ]);
-
-        $object = $this->objectManager->create($forge, [
-            'config' => $config,
-        ]);
+        $forge = $this->arrHelper->get('forge', $config);
+        $object = $this->objectManager->create($forge);
 
         if (!$object || !($object instanceof WorkerInterface)) {
             return null;

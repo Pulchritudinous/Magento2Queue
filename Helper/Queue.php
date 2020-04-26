@@ -334,9 +334,6 @@ class Queue
     {
         $rule = $this->_arrHelper->get('rule', $config);
         $transaction = $this->_transactionFactory->create();
-        $data = [
-            'status' => Labour::STATUS_DEPLOYED,
-        ];
 
         if ($rule === Labour::RULE_BATCH) {
             $queueCollection = $this->_getQueueCollection()
@@ -345,21 +342,19 @@ class Queue
 
             foreach ($queueCollection as $bundle) {
                 if ($bundle->getId() != $labour->getId()) {
-                    $bundle->addData(
-                        array_merge(
-                            $data,
-                            [
-                                'parent_id' => $labour->getId(),
-                            ]
-                        )
-                    );
+                    $bundle->addData([
+                        'parent_id' => $labour->getId(),
+                        'status' => Labour::STATUS_DEPLOYED,
+                    ]);
 
                     $transaction->addObject($bundle);
                 }
             }
         }
 
-        $labour->addData($data);
+        $labour->addData([
+            'status' => Labour::STATUS_DEPLOYED,
+        ]);
 
         $transaction->addObject($labour);
         $transaction->save();
