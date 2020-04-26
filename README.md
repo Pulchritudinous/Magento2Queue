@@ -71,14 +71,3 @@ autorestart=true
 user = www-data
 priority=20
 ```
-
-## Specifications
-
- - Helper
-    - Pulchritudinous\Queue\Helper\Db
-    - Pulchritudinous\Queue\Helper\Data
-
- - Console Command
-    - labour
-    - start
-
