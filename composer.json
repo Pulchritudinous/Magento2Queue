@@ -1,0 +1,23 @@
+{
+    "name": "pulchritudinous/magento-queue",
+    "description": "Magento Asynchronously Queue",
+    "type": "magento2-module",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Anton Samuelsson",
+            "email": "samuelsson.anton@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Pulchritudinous\\Queue\\": ""
+        }
+    }
+}
+
