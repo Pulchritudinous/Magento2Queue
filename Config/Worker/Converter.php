@@ -151,9 +151,16 @@ class Converter
                 }
             }
 
-          if ($schedules->nodeName == 'helper') {
+          if ($schedules->nodeName == 'is_allowed') {
                 if (!empty($schedules->nodeValue)) {
-                    $result['helper'] = $schedules->nodeValue;
+                    list($recClass, $recMethod) = explode('::', $schedules->nodeValue);
+
+                    $obj = $this->objectManager->get($recClass);
+
+                    if ($obj && true === method_exists($obj, $recMethod)) {
+                        $result['is_allowed'] = (bool) $obj::$recMethod;
+                    }
+
                     break;
                 }
             }

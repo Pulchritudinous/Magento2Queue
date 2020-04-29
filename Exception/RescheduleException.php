@@ -25,9 +25,7 @@
 
 namespace Pulchritudinous\Queue\Exception;
 
-use Magento\Framework\Exception\LocalizedException;
-
-class RescheduleException extends LocalizedException
+class RescheduleException extends \Exception
 {
 }
 

@@ -466,15 +466,13 @@ class Labour
     }
 
     /**
-     * Object after load processing. Implemented as public interface for supporting
-     * objects after load in collections
+     * Get payload object.
      *
-     * @return Labour
+     * @return array
      */
-    public function afterLoad() : Labour
+    public function getPayload() : array
     {
-        $this->setPayload(json_decode((string) $this->getPayload(), true));
-        return parent::_afterLoad();
+        return json_decode((string) $this->getData('payload'), true);
     }
 }
 

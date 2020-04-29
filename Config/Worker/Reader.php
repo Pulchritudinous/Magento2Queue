@@ -27,7 +27,7 @@ class Reader
     extends \Magento\Framework\Config\Reader\Filesystem
 {
     protected $_idAttributes = [
-        '/config/queue' => 'id',
+        '/config/queue/worker' => 'id',
     ];
 
     public function __construct(

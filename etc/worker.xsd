@@ -27,7 +27,7 @@
 <xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
     <xs:element name="config">
         <xs:complexType>
-            <xs:choice>
+            <xs:choice maxOccurs="unbounded">
                 <xs:element maxOccurs="unbounded" minOccurs="0" name="queue" type="pulchQueueType"/>
             </xs:choice>
         </xs:complexType>
@@ -58,7 +58,7 @@
 
     <xs:complexType name="pulchRecurringType">
         <xs:choice>
-            <xs:element maxOccurs="1" minOccurs="0" name="helper" type="xs:string"/>
+            <xs:element maxOccurs="1" minOccurs="0" name="is_allowed" type="staticCall"/>
             <xs:element maxOccurs="1" minOccurs="1" name="schedule" type="scheduleDeclaration"/>
         </xs:choice>
     </xs:complexType>
@@ -101,6 +101,12 @@
     <xs:simpleType name="lockStorage">
         <xs:restriction base="xs:string">
             <xs:pattern value="(db|file)"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="staticCall">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="\w+::\w+\(\)"/>
         </xs:restriction>
     </xs:simpleType>
 

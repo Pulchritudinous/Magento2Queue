@@ -124,14 +124,15 @@ class Queue
         $byRecurring = (bool) $this->_arrHelper->get('by_recurring', $options, false);
         $options = $this->_arrHelper->remove('by_recurring', $options);
 
+        $identity = $this->_arrHelper->get('identity', $options, '');
+        $options = $this->_arrHelper->remove('identity', $options);
+
         $options = array_merge(
             $config,
             $options
         );
 
         $this->_validateOptions($options);
-
-        $identity = $this->_arrHelper->get('identity', $options, '');
 
         if (!is_string($identity)) {
             throw new InputException('Identity needs to be of type string');
