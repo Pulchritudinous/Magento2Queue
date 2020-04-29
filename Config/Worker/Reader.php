@@ -28,8 +28,6 @@ class Reader
 {
     protected $_idAttributes = [
         '/config/queue/worker' => 'id',
-        '/config/queue/worker_default' => 'id',
-        '/config/queue/server_default' => 'id',
     ];
 
     public function __construct(

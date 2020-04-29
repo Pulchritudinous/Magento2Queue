@@ -26,8 +26,8 @@
 namespace Pulchritudinous\Queue\Console\Command;
 
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process as SymfonyProcess;
@@ -45,7 +45,6 @@ use Pulchritudinous\Queue\Model\Server\Process;
 use Pulchritudinous\Queue\Helper\Db as DbHelper;
 use Pulchritudinous\Queue\Model\Labour as LabourModel;
 use Pulchritudinous\Queue\Helper\Worker\Config as WorkerConfig;
-use Pulchritudinous\Queue\Helper\Server\Config as ServerConfig;
 use Pulchritudinous\Queue\Helper\Worker\Factory as WorkerFactory;
 
 class Server extends Command
@@ -54,6 +53,8 @@ class Server extends Command
     const LOCK_NAME = 'pulchqueue';
     const ARGUMENT_THREADS = 'threads';
     const ARGUMENT_POLL = 'poll';
+    const ARGUMENT_PLAN_AHEAD = 'planahead';
+    const ARGUMENT_RESOLUTION = 'resolution';
 
     /**
      * @var LockManagerInterface
@@ -71,13 +72,6 @@ class Server extends Command
      * @var \Magento\Framework\ObjectManagerInterface
      */
     protected $objectManager = null;
-
-    /**
-     * Server config instance
-     *
-     * @var \Pulchritudinous\Queue\Helper\Server\Config
-     */
-    protected $serverConfig = null;
 
     /**
      * Worker config instance
@@ -140,13 +134,21 @@ class Server extends Command
      *
      * @param string $name
      * @param LockManagerInterface $lockManager
+     * @param LockManagerInterface $lockManager
+     * @param DirectoryList $directory
+     * @param WorkerConfig $workerConfig
+     * @param WorkerFactory $workerFactory
+     * @param Queue $queue
+     * @param DbHelper $dbHelper
+     * @param ArrayManager $arrHelper
+     * @param FlagManager $flagManager
+     * @param LoggerInterface $logger
      */
     public function __construct(
         $name = null,
         LockManagerInterface $lockManager = null,
         DirectoryList $directory = null,
-        WorkerConfig $serverConfig = null,
-        ServerConfig $workerConfig = null,
+        WorkerConfig $workerConfig = null,
         WorkerFactory $workerFactory = null,
         Queue $queue = null,
         DbHelper $dbHelper = null,
@@ -159,7 +161,6 @@ class Server extends Command
 
         $this->lockManager = $lockManager ?: $objectManager->get(LockManagerInterface::class);
         $this->workerConfig = $workerConfig ?: $objectManager->get(WorkerConfig::class);
-        $this->serverConfig = $serverConfig ?: $objectManager->get(ServerConfig::class);
         $this->workerFactory = $workerFactory ?: $objectManager->get(WorkerFactory::class);
         $this->queue = $queue ?: $objectManager->get(Queue::class);
         $this->dbHelper = $dbHelper ?: $objectManager->get(DbHelper::class);
@@ -180,6 +181,15 @@ class Server extends Command
     {
         $this->setName('pulchqueue:server');
         $this->setDescription('Start queue server');
+
+        $this->setDefinition([
+            new InputArgument('name', InputArgument::OPTIONAL, ''),
+            new InputOption(self::ARGUMENT_THREADS, '-t', InputOption::VALUE_NONE, 'How many simultaneous threads?'),
+            new InputOption(self::ARGUMENT_POLL, '-p', InputOption::VALUE_NONE, 'How often to look for executable labours (sec)?'),
+            new InputOption(self::ARGUMENT_PLAN_AHEAD, '-a', InputOption::VALUE_NONE, 'Recurring - Plan minutes ahead?'),
+            new InputOption(self::ARGUMENT_RESOLUTION, '-r', InputOption::VALUE_NONE, 'Recurring - Resolution?'),
+        ]);
+
         parent::configure();
     }
 
@@ -188,6 +198,31 @@ class Server extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $threads = (int) ($input->getOption(self::ARGUMENT_THREADS) ?: 2);
+        $poll = (int) ($input->getOption(self::ARGUMENT_POLL) ?: 2);
+        $planAhead = (int) ($input->getOption(self::ARGUMENT_PLAN_AHEAD) ?: 10);
+        $resolution = (int) ($input->getOption(self::ARGUMENT_RESOLUTION) ?: 1);
+
+        if ($threads < 1) {
+            $output->writeln("<error>threads must be greater than 0</error>");
+            return \Magento\Framework\Console\Cli::RETURN_FAILURE;
+        }
+
+        if ($poll < 1) {
+            $output->writeln("<error>poll must be greater than 0</error>");
+            return \Magento\Framework\Console\Cli::RETURN_FAILURE;
+        }
+
+        if ($planAhead < 1) {
+            $output->writeln("<error>planahead must be greater than 0</error>");
+            return \Magento\Framework\Console\Cli::RETURN_FAILURE;
+        }
+
+        if ($resolution < 1) {
+            $output->writeln("<error>resolution must be greater than 0</error>");
+            return \Magento\Framework\Console\Cli::RETURN_FAILURE;
+        }
+
         $this->_updateLastSchedule();
 
         if ($this->lockManager->isLocked(md5(self::LOCK_NAME))) {
@@ -199,24 +234,21 @@ class Server extends Command
 
         $this->lockManager->lock(self::LOCK_NAME);
 
-        $config = $this->_getConfig();
         $queue = $this->objectManager->create('\Pulchritudinous\Queue\Helper\Queue');
         $processes = [];
-
-        $poll = (int) $this->arrHelper->get('poll', $config);
 
         try {
             while ($this->run) {
                 $processes = $this->_validateProcesses($processes);
 
-                $this->addRecurringLabours($output);
+                $this->addRecurringLabours($output, $planAhead, $resolution);
 
-                if (!$this->_canStartNext(count($processes))) {
+                if (!$this->_canStartNext(count($processes), $threads)) {
                     sleep($poll);
                     continue;
                 }
 
-                $labours = $queue->receive($this->_canReceiveCount(count($processes)));
+                $labours = $queue->receive($this->_canReceiveCount(count($processes), $threads));
 
                 if (null === $labours) {
                     sleep($poll);
@@ -316,25 +348,16 @@ class Server extends Command
     }
 
     /**
-     * Get server configure.
-     *
-     * @return array
-     */
-    protected function _getConfig() : array
-    {
-        return $this->serverConfig->getServerDefaultConfig();
-    }
-
-    /**
      * Check if another process is allowed to start.
      *
      * @param integer $processCount
+     * @param integer $threads
      *
      * @return boolean
      */
-    protected function _canStartNext(int $processCount) : bool
+    protected function _canStartNext(int $processCount, int $threads) : bool
     {
-        if (0 !== $this->_canReceiveCount($processCount)) {
+        if (0 !== $this->_canReceiveCount($processCount, $threads)) {
             return true;
         }
         return false;
@@ -347,25 +370,23 @@ class Server extends Command
      *
      * @return integer
      */
-    protected function _canReceiveCount(int $processCount) : int
+    protected function _canReceiveCount(int $processCount, int $threads) : int
     {
-        $config = $this->_getConfig();
-
-        return max(0, $this->arrHelper->get('threads', $config) - $processCount);
+        return max(0, $threads - $processCount);
     }
 
     /**
      * Add recurring labours to queue.
      *
      * @param  OutputInterface $output
+     * @param  int $planAhead
+     * @param  int $resolution
      *
      * @return Server
      */
-    public function addRecurringLabours(OutputInterface $output) : Server
+    public function addRecurringLabours(OutputInterface $output, int $planAhead, int $resolution) : Server
     {
         $workers = $this->workerConfig->getRecurringWorkers();
-        $config = $this->_getConfig();
-        $planAhead = $this->arrHelper->get('recurring/plan_ahead_min', $config);
         $last = (int) $this->_lastSchedule;
         $itsTime = ($last + $planAhead * 60) <= time();
 
@@ -381,7 +402,7 @@ class Server extends Command
 
         foreach ($workers as $worker) {
             $pattern = $this->arrHelper->get('recurring/schedule', $worker);
-            $runTimes = $this->generateRunDates($pattern);
+            $runTimes = $this->generateRunDates($pattern, $planAhead, $resolution);
 
             if (empty($runTimes)) {
                 continue;
@@ -443,15 +464,13 @@ class Server extends Command
      * Generate date times to execute labour at.
      *
      * @param  string $pattern
+     * @param  int $planAhead
+     * @param  int $resolution
      *
      * @return array
      */
-    public function generateRunDates(string $pattern) : array
+    public function generateRunDates(string $pattern, int $planAhead, int $resolution) : array
     {
-        $config = $this->_getConfig();
-        $planAhead = (int) $this->arrHelper->get('recurring/plan_ahead_min', $config);
-        $resolution = (int) $this->arrHelper->get('recurring/resolution', $config);
-
         $scheduler = $this->objectManager->get('\Magento\Cron\Model\Schedule');
         $time = time();
         $timeAhead = $time + ($planAhead * 60);

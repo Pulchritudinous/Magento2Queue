@@ -84,15 +84,6 @@
             <reschedule>0</reschedule>
             <timeout>60</timeout>
         </worker_default>
-
-        <server_default>
-            <threads>2</threads>
-            <poll>2</poll>
-            <recurring>
-                <plan_ahead_min>10</plan_ahead_min>
-                <resolution>1</resolution>
-            </recurring>
-        </server_default>
     </queue>
 </config>
 

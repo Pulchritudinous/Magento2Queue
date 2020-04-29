@@ -37,7 +37,6 @@
         <xs:choice maxOccurs="unbounded">
             <xs:element maxOccurs="unbounded" minOccurs="1" name="worker" type="pulchWorkerType"/>
             <xs:element maxOccurs="1" minOccurs="1" name="worker_default" type="pulchWorkerDefaultType"/>
-            <xs:element maxOccurs="1" minOccurs="1" name="server_default" type="pulchServerType"/>
         </xs:choice>
     </xs:complexType>
 
@@ -72,21 +71,6 @@
             <xs:element maxOccurs="1" minOccurs="1" name="reschedule" type="zeroOrMore"/>
             <xs:element maxOccurs="1" minOccurs="1" name="type" type="xs:string"/>
             <xs:element maxOccurs="1" minOccurs="1" name="timeout" type="moreThanZero"/>
-        </xs:choice>
-    </xs:complexType>
-
-    <xs:complexType name="pulchServerType">
-        <xs:choice maxOccurs="unbounded">
-            <xs:element maxOccurs="1" minOccurs="1" name="threads" type="moreThanZero"/>
-            <xs:element maxOccurs="1" minOccurs="1" name="poll" type="zeroOrMore"/>
-            <xs:element maxOccurs="1" minOccurs="1" name="recurring" type="pulchServerRecurringType"/>
-        </xs:choice>
-    </xs:complexType>
-
-    <xs:complexType name="pulchServerRecurringType">
-        <xs:choice maxOccurs="unbounded">
-            <xs:element maxOccurs="1" minOccurs="1" name="plan_ahead_min" type="moreThanZero"/>
-            <xs:element maxOccurs="1" minOccurs="1" name="resolution" type="moreThanZero"/>
         </xs:choice>
     </xs:complexType>
 

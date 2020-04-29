@@ -113,23 +113,6 @@ class Converter
             }
         }
 
-        $server = $xpath->query('/config/queue/server_default')->item(0);
-
-        foreach ($server->childNodes as $childNode) {
-            if ($childNode->nodeType != XML_ELEMENT_NODE) {
-                continue;
-            }
-
-            switch ($childNode->nodeName) {
-                case 'recurring':
-                    $output['server_default'][$childNode->nodeName] = $this->convertServerRecurring($childNode);
-                    break;
-                default:
-                    $output['server_default'][$childNode->nodeName] = $childNode->nodeValue;
-                    break;
-            }
-        }
-
         return $output;
     }
 
@@ -165,24 +148,6 @@ class Converter
 
                 continue;
             }
-        }
-
-        return $result;
-    }
-
-    /**
-     * Convert server recurring
-     *
-     * @param \DOMElement $jobConfig
-     *
-     * @return array
-     */
-    protected function convertServerRecurring(\DOMElement $jobConfig) : array
-    {
-        $result = [];
-        /** @var \DOMText $schedules */
-        foreach ($jobConfig->childNodes as $schedules) {
-            $result[$schedules->nodeName] = $schedules->nodeValue;
         }
 
         return $result;
