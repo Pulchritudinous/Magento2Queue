@@ -132,6 +132,8 @@ class Queue
             $options
         );
 
+        $options = $this->_arrHelper->remove('recurring', $options);
+
         $this->_validateOptions($options);
 
         if (!is_string($identity)) {

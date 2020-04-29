@@ -81,11 +81,11 @@ class Converter
 
                 switch ($childNode->nodeName) {
                     case 'recurring':
-                            $data[$childNode->nodeName] = $this->convertCronSchedule($childNode);
-                            break;
-                        default:
-                            $data[$childNode->nodeName] = $childNode->nodeValue;
-                            break;
+                        $data[$childNode->nodeName] = $this->convertCronSchedule($childNode);
+                        break;
+                    default:
+                        $data[$childNode->nodeName] = $childNode->nodeValue;
+                        break;
                 }
             }
 
@@ -104,7 +104,7 @@ class Converter
             }
 
             switch ($childNode->nodeName) {
-            case 'recurring':
+                case 'recurring':
                     $output['default'][$childNode->nodeName] = $this->convertCronSchedule($childNode);
                     break;
                 default:
@@ -121,7 +121,7 @@ class Converter
             }
 
             switch ($childNode->nodeName) {
-            case 'recurring':
+                case 'recurring':
                     $output['server_default'][$childNode->nodeName] = $this->convertServerRecurring($childNode);
                     break;
                 default:
@@ -147,24 +147,24 @@ class Converter
             if ($schedules->nodeName == 'schedule') {
                 if (!empty($schedules->nodeValue)) {
                     $result['schedule'] = $schedules->nodeValue;
-                    break;
                 }
+
+                continue;
             }
 
-          if ($schedules->nodeName == 'is_allowed') {
+            if ($schedules->nodeName == 'is_allowed') {
                 if (!empty($schedules->nodeValue)) {
                     list($recClass, $recMethod) = explode('::', $schedules->nodeValue);
 
                     $obj = $this->objectManager->get($recClass);
 
                     if ($obj && true === method_exists($obj, $recMethod)) {
-                        $result['is_allowed'] = (bool) $obj::$recMethod;
+                        $result['is_allowed'] = (bool) \call_user_func(get_class($obj) . '::' . $recMethod);
                     }
-
-                    break;
                 }
+
+                continue;
             }
-            continue;
         }
 
         return $result;
