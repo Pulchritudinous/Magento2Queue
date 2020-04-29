@@ -65,10 +65,8 @@ class Labour extends Command
     ) {
         $objectManager = ObjectManager::getInstance();
 
-        $this->labourModel = $labourModel ?: ObjectManager::getInstance()
-            ->get(LabourModel::class);
-        $this->logger = $logger ?: ObjectManager::getInstance()
-             ->get(LoggerInterface::class);
+        $this->labourModel = $labourModel ?: $objectManager->get(LabourModel::class);
+        $this->logger = $logger ?: $objectManager->get(LoggerInterface::class);
 
         parent::__construct($name);
     }

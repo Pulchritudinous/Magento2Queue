@@ -166,7 +166,7 @@ class Server extends Command
         $this->dbHelper = $dbHelper ?: $objectManager->get(DbHelper::class);
         $this->arrHelper = $arrHelper ?: $objectManager->get(ArrayManager::class);
         $this->flagManager = $flagManager ?: $objectManager->get(FlagManager::class);
-        $this->logger = $logger ?: ObjectManager::getInstance()->get(LoggerInterface::class);
+        $this->logger = $logger ?: $objectManager->get(LoggerInterface::class);
 
         $this->objectManager = $objectManager;
         $this->rootPath = $directory->getRoot();
@@ -401,6 +401,12 @@ class Server extends Command
         $this->_updateLastSchedule(time());
 
         foreach ($workers as $worker) {
+            $isAllowed = $this->arrHelper->get('recurring/is_allowed', $worker, true);
+
+            if (false === $isAllowed) {
+                continue;
+            }
+
             $pattern = $this->arrHelper->get('recurring/schedule', $worker);
             $runTimes = $this->generateRunDates($pattern, $planAhead, $resolution);
 
