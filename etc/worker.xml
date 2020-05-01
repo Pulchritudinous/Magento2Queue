@@ -26,56 +26,6 @@
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="worker.xsd">
     <queue>
-        <worker id="test_expected_exception">
-            <type>test</type>
-            <priority>500</priority>
-            <forge>Pulchritudinous\Queue\Model\TestWorker\TestException</forge>
-        </worker>
-
-        <worker id="test_expected_reschedule_exception">
-            <type>test</type>
-            <priority>500</priority>
-            <forge>Pulchritudinous\Queue\Model\TestWorker\TestRescheduleException</forge>
-        </worker>
-
-        <worker id="test_successful_wait_work">
-            <type>test</type>
-            <rule>wait</rule>
-            <priority>500</priority>
-            <forge>Pulchritudinous\Queue\Model\TestWorker\TestSuccess</forge>
-        </worker>
-
-        <worker id="test_successful_batch_work">
-            <type>test</type>
-            <rule>batch</rule>
-            <priority>500</priority>
-            <forge>Pulchritudinous\Queue\Model\TestWorker\TestSuccess</forge>
-        </worker>
-
-        <worker id="test_successful_ignore_work">
-            <type>test</type>
-            <rule>ignore</rule>
-            <priority>500</priority>
-            <forge>Pulchritudinous\Queue\Model\TestWorker\TestSuccess</forge>
-        </worker>
-
-        <worker id="test_successful_replace_work">
-            <type>test</type>
-            <rule>replace</rule>
-            <priority>500</priority>
-            <forge>Pulchritudinous\Queue\Model\TestWorker\TestSuccess</forge>
-        </worker>
-
-        <worker id="test_successful_recurring_work">
-            <type>test</type>
-            <rule>replace</rule>
-            <priority>500</priority>
-            <forge>Pulchritudinous\Queue\Model\TestWorker\TestSuccess</forge>
-            <recurring>
-                <schedule>*/1 * * * *</schedule>
-            </recurring>
-        </worker>
-
         <worker_default>
             <priority>100</priority>
             <rule>wait</rule>
