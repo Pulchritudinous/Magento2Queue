@@ -119,7 +119,7 @@ class Queue
 
         if (null === $config) {
             $message = __(
-                'Unable to find worker with name %workder',
+                'Unable to find worker with name %worker',
                 ['worker' => $worker]
             );
 
