@@ -118,7 +118,12 @@ class Queue
         $config = $this->_workerConfig->getWorkerConfigById($worker);
 
         if (null === $config) {
-            throw new NoSuchEntityException("Unable to find worker with name {$worker}");
+            $message = __(
+                'Unable to find worker with name %workder',
+                ['worker' => $worker]
+            );
+
+            throw new NoSuchEntityException($message);
         }
 
         $byRecurring = (bool) $this->_arrHelper->get('by_recurring', $options, false);
@@ -137,7 +142,7 @@ class Queue
         $this->_validateOptions($options);
 
         if (!is_string($identity)) {
-            throw new InputException('Identity needs to be of type string');
+            throw new InputException(__('Identity needs to be of type string'));
         }
 
         $delay = $this->_arrHelper->get('delay', $options, null);
