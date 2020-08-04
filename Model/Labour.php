@@ -234,7 +234,15 @@ class Labour
 
             $this->logger->critical($e);
         } catch (\Exception $e) {
-            $this->setAsFailed();
+            $this->reschedule();
+
+            $this->logger->critical($e);
+        } catch (\ParseError $e) {
+            $this->reschedule();
+
+            $this->logger->critical($e);
+        } catch (\Error $e) {
+            $this->reschedule();
 
             $this->logger->critical($e);
         }
