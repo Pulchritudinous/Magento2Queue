@@ -106,7 +106,17 @@ class Labour extends Command
             $this->logger->critical($e);
             $msg = $e->getMessage();
             $output->writeln("<error>$msg</error>");
-            return \Magento\Framework\Console\Cli::RETURN_FAILURE;
+            return \Magento\Framework\Console\Cli::RETURN_SUCCESS;
+        } catch (\ParseError $e) {
+            $this->logger->critical($e);
+            $msg = $e->getMessage();
+            $output->writeln("<error>$msg</error>");
+            return \Magento\Framework\Console\Cli::RETURN_SUCCESS;
+        } catch (\Error $e) {
+            $this->logger->critical($e);
+            $msg = $e->getMessage();
+            $output->writeln("<error>$msg</error>");
+            return \Magento\Framework\Console\Cli::RETURN_SUCCESS;
         }
 
         return \Magento\Framework\Console\Cli::RETURN_SUCCESS;

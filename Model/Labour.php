@@ -230,21 +230,21 @@ class Labour
             $this->_execute();
             $this->_afterExecute();
         } catch (RescheduleException $e) {
-            $this->reschedule();
-
             $this->logger->critical($e);
+
+            $this->reschedule();
         } catch (\Exception $e) {
-            $this->reschedule();
-
             $this->logger->critical($e);
+
+            $this->reschedule();
         } catch (\ParseError $e) {
-            $this->reschedule();
-
             $this->logger->critical($e);
+
+            $this->reschedule();
         } catch (\Error $e) {
-            $this->reschedule();
-
             $this->logger->critical($e);
+
+            $this->reschedule();
         }
     }
 

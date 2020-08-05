@@ -30,7 +30,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Process\Process as SymfonyProcess;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 
 use Psr\Log\LoggerInterface;
 
@@ -263,16 +263,50 @@ class Server extends Command
                         continue;
                     }
 
-                    $process = $this->_getProcess($labour);
+                    try {
+                        $process = $this->_getProcess($labour);
 
-                    $process->start();
+                        $this->dbHelper->updateLabourField($labour, 'pid', (string) $process->getPid());
 
-                    $this->dbHelper->updateLabourField($labour, 'pid', (string) $process->getPid());
+                        $process->start();
 
-                    $processes[] = $process;
+                        if (!$process->isSuccessful()) {
+                            throw new ProcessFailedException($process);
+                        }
+
+                        $processes[] = $process;
+                    } catch (\Exception $e) {
+                        $this->logger->critical($e);
+                        $msg = $e->getMessage();
+                        $output->writeln("<error>$msg</error>");
+
+                        $labour->reschedule();
+                    } catch (\ParseError $e) {
+                        $this->logger->critical($e);
+                        $msg = $e->getMessage();
+                        $output->writeln("<error>$msg</error>");
+
+                        $labour->reschedule();
+                    } catch (\Error $e) {
+                        $this->logger->critical($e);
+                        $msg = $e->getMessage();
+                        $output->writeln("<error>$msg</error>");
+
+                        $labour->reschedule();
+                    }
                 }
             }
         } catch (\Exception $e) {
+            $this->logger->critical($e);
+            $msg = $e->getMessage();
+            $output->writeln("<error>$msg</error>");
+            return \Magento\Framework\Console\Cli::RETURN_FAILURE;
+        } catch (\ParseError $e) {
+            $this->logger->critical($e);
+            $msg = $e->getMessage();
+            $output->writeln("<error>$msg</error>");
+            return \Magento\Framework\Console\Cli::RETURN_FAILURE;
+        } catch (\Error $e) {
             $this->logger->critical($e);
             $msg = $e->getMessage();
             $output->writeln("<error>$msg</error>");
@@ -330,19 +364,18 @@ class Server extends Command
 
         $labourCmd->configure();
 
-        $php = PHP_BINDIR ? PHP_BINDIR . '/php' : 'php';
+        $php = $_SERVER['_'];
         $magentoBinary = $php . " -f {$this->rootPath}/bin/magento";
         $labourCmdName = $labourCmd->getName();
         $arguments = $labour->getId();
 
         $process = (new Process([
-                $magentoBinary,
+                $php,
                 $labourCmdName,
                 $arguments,
             ]))
             ->setTimeout($this->arrHelper->get('timeout', $config))
-            ->setLabour($labour)
-            ->disableOutput();
+            ->setLabour($labour);
 
         return $process;
     }

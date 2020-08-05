@@ -35,7 +35,7 @@ class Process
      *
      * @var Labour
      */
-    private $labor;
+    private $labour;
 
     /**
      * Set Labour instance
