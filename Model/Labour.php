@@ -356,7 +356,9 @@ class Labour
 
         $transaction = $this->transactionFactory->create();
 
-        if (self::RULE_BATCH === $config->getRule()) {
+
+
+        if (self::RULE_BATCH === $this->arrHelper->get('rule', $config)) {
             $queueCollection = $this->getBatchCollection();
 
             foreach ($queueCollection as $bundle) {
