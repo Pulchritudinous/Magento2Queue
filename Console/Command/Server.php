@@ -40,12 +40,7 @@ use Magento\Framework\Stdlib\ArrayManager;
 use Magento\Framework\Filesystem\DirectoryList;
 use Magento\Framework\Lock\LockManagerInterface;
 
-use Pulchritudinous\Queue\Helper\Queue;
 use Pulchritudinous\Queue\Model\Server\Process;
-use Pulchritudinous\Queue\Helper\Db as DbHelper;
-use Pulchritudinous\Queue\Model\Labour as LabourModel;
-use Pulchritudinous\Queue\Helper\Worker\Config as WorkerConfig;
-use Pulchritudinous\Queue\Helper\Worker\Factory as WorkerFactory;
 
 class Server extends Command
 {
@@ -57,7 +52,7 @@ class Server extends Command
     const ARGUMENT_RESOLUTION = 'resolution';
 
     /**
-     * @var LockManagerInterface
+     * @var \Magento\Framework\Lock\LockManagerInterface
      */
     private $lockManager = null;
 
@@ -123,6 +118,11 @@ class Server extends Command
     private $logger;
 
     /**
+     * @var \Symfony\Component\Process\PhpExecutableFinder
+     */
+    protected $phpExecutableFinder;
+
+    /**
      * Should be running
      *
      * @var boolean
@@ -132,44 +132,45 @@ class Server extends Command
     /**
      * Server constructor.
      *
+     * @param \Magento\Framework\Lock\LockManagerInterface $lockManager
+     * @param \Magento\Framework\Filesystem\DirectoryList $directory
+     * @param \Magento\Framework\Stdlib\ArrayManager $arrHelper
+     * @param \Magento\Framework\Process\PhpExecutableFinderFactory $phpExecutableFinderFactory
+     * @param \Pulchritudinous\Queue\Helper\Worker\Config $workerConfig
+     * @param \Pulchritudinous\Queue\Helper\Worker\Factory $workerFactory
+     * @param \Pulchritudinous\Queue\Helper\Queue $queue
+     * @param \Pulchritudinous\Queue\Helper\Db $dbHelper
+     * @param \Magento\Framework\FlagManager $flagManager
+     * @param \Psr\Log\LoggerInterface $logger
      * @param string $name
-     * @param LockManagerInterface $lockManager
-     * @param LockManagerInterface $lockManager
-     * @param DirectoryList $directory
-     * @param WorkerConfig $workerConfig
-     * @param WorkerFactory $workerFactory
-     * @param Queue $queue
-     * @param DbHelper $dbHelper
-     * @param ArrayManager $arrHelper
-     * @param FlagManager $flagManager
-     * @param LoggerInterface $logger
      */
     public function __construct(
-        $name = null,
-        LockManagerInterface $lockManager = null,
-        DirectoryList $directory = null,
-        WorkerConfig $workerConfig = null,
-        WorkerFactory $workerFactory = null,
-        Queue $queue = null,
-        DbHelper $dbHelper = null,
-        ArrayManager $arrHelper = null,
-        FlagManager $flagManager = null,
-        LoggerInterface $logger = null
+        \Magento\Framework\Lock\LockManagerInterface $lockManager,
+        \Magento\Framework\Filesystem\DirectoryList $directory,
+        \Magento\Framework\Stdlib\ArrayManager $arrHelper,
+        \Magento\Framework\Process\PhpExecutableFinderFactory $phpExecutableFinderFactory,
+        \Pulchritudinous\Queue\Helper\Worker\Config $workerConfig,
+        \Pulchritudinous\Queue\Helper\Worker\Factory $workerFactory,
+        \Pulchritudinous\Queue\Helper\Queue $queue,
+        \Pulchritudinous\Queue\Helper\Db $dbHelper,
+        \Magento\Framework\FlagManager $flagManager,
+        \Psr\Log\LoggerInterface $logger,
+        $name = null
     ) {
         $objectManager = ObjectManager::getInstance();
-        $directory = $directory ?: $objectManager->get(DirectoryList::class);
 
-        $this->lockManager = $lockManager ?: $objectManager->get(LockManagerInterface::class);
-        $this->workerConfig = $workerConfig ?: $objectManager->get(WorkerConfig::class);
-        $this->workerFactory = $workerFactory ?: $objectManager->get(WorkerFactory::class);
-        $this->queue = $queue ?: $objectManager->get(Queue::class);
-        $this->dbHelper = $dbHelper ?: $objectManager->get(DbHelper::class);
-        $this->arrHelper = $arrHelper ?: $objectManager->get(ArrayManager::class);
-        $this->flagManager = $flagManager ?: $objectManager->get(FlagManager::class);
-        $this->logger = $logger ?: $objectManager->get(LoggerInterface::class);
+        $this->lockManager = $lockManager;
+        $this->workerConfig = $workerConfig;
+        $this->workerFactory = $workerFactory;
+        $this->queue = $queue;
+        $this->dbHelper = $dbHelper;
+        $this->arrHelper = $arrHelper;
+        $this->flagManager = $flagManager;
+        $this->logger = $logger;
 
         $this->objectManager = $objectManager;
         $this->rootPath = $directory->getRoot();
+        $this->phpExecutableFinder = $phpExecutableFinderFactory->create();
 
         parent::__construct($name);
     }
@@ -270,7 +271,7 @@ class Server extends Command
 
                         $process->start();
 
-                        if (!$process->isSuccessful()) {
+                        if (!$process->isRunning()) {
                             throw new ProcessFailedException($process);
                         }
 
@@ -319,7 +320,7 @@ class Server extends Command
     /**
      * Validate all processes.
      *
-     * @param  array $processes
+     * @param array $processes
      *
      * @return array
      */
@@ -337,7 +338,7 @@ class Server extends Command
     /**
      * Validate single process.
      *
-     * @param  Process $process
+     * @param Process $process
      *
      * @return boolean
      */
@@ -353,29 +354,31 @@ class Server extends Command
     /**
      * Get process instance.
      *
-     * @param  LabourModel $labour
+     * @param \Pulchritudinous\Queue\Model\Labour $labour
      *
      * @return Process
      */
-    protected function _getProcess(LabourModel $labour) : Process
+    protected function _getProcess(\Pulchritudinous\Queue\Model\Labour $labour) : Process
     {
         $config = $this->workerConfig->getWorkerConfigById($labour->getWorker());
         $labourCmd = $this->objectManager->create(Labour::class);
 
         $labourCmd->configure();
 
-        $php = $_SERVER['_'];
-        $magentoBinary = $php . " -f {$this->rootPath}/bin/magento";
+        $php = $this->phpExecutableFinder->find() ?: 'php';
+        $magentoBinary = BP . '/bin/magento';
         $labourCmdName = $labourCmd->getName();
         $arguments = $labour->getId();
 
         $process = (new Process([
                 $php,
+                $magentoBinary,
                 $labourCmdName,
                 $arguments,
             ]))
             ->setTimeout($this->arrHelper->get('timeout', $config))
-            ->setLabour($labour);
+            ->setLabour($labour)
+            ->disableOutput();
 
         return $process;
     }

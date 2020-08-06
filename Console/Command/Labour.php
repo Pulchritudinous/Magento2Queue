@@ -31,10 +31,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-use Magento\Framework\App\ObjectManager;
-use Psr\Log\LoggerInterface;
-use Pulchritudinous\Queue\Model\Labour as LabourModel;
-
 class Labour extends Command
 {
     const LABOUR_ARGUMENT = 'labour';
@@ -49,24 +45,24 @@ class Labour extends Command
     /**
      * Logger instance
      *
-     * @var LoggerInterface
+     * @var \Psr\Log\LoggerInterface
      */
     private $logger;
 
     /**
      * Server constructor.
      *
+     * @parm \Psr\Log\LoggerInterface $logger
+     * @parm \Pulchritudinous\Queue\Model\Labour $labourModel
      * @param string $name
      */
     public function __construct(
-        $name = null,
-        LoggerInterface $labourModel = null,
-        LabourModel $logger = null
+        \Psr\Log\LoggerInterface $logger,
+        \Pulchritudinous\Queue\Model\Labour $labourModel,
+        $name = null
     ) {
-        $objectManager = ObjectManager::getInstance();
-
-        $this->labourModel = $labourModel ?: $objectManager->get(LabourModel::class);
-        $this->logger = $logger ?: $objectManager->get(LoggerInterface::class);
+        $this->labourModel = $labourModel;
+        $this->logger = $logger;
 
         parent::__construct($name);
     }
