@@ -298,7 +298,7 @@ class Labour
     /**
      * After a successful execution.
      *
-     * @return Pulchritudinous_Queue_Model_Labour
+     * @return Labour
      */
     protected function _afterExecute()
     {
@@ -329,11 +329,11 @@ class Labour
     /**
      * Reschedule labour.
      *
-     * @param  boolean $detatch
+     * @param  boolean $detach
      *
      * @return Labour
      */
-    public function reschedule(bool $detatch = false) : Labour
+    public function reschedule(bool $detach = false) : Labour
     {
         $config = $this->getWorkerConfig();
         $currentAttempts = $this->getAttempts() ?: 0;
@@ -349,7 +349,7 @@ class Labour
         $data = [
             'status' => self::STATUS_PENDING,
             'execute_at' => $when,
-            'parent_id' => (true === $detatch) ? null : $this->getId(),
+            'parent_id' => (true === $detach) ? null : $this->getId(),
         ];
 
         $transaction = $this->transactionFactory->create();
@@ -447,7 +447,7 @@ class Labour
     /**
      * Get child collection.
      *
-     * @return LabourCollection
+     * @return \Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection
      */
     public function getBatchCollection() : LabourCollection
     {
