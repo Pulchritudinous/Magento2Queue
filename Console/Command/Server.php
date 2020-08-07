@@ -276,19 +276,7 @@ class Server extends Command
                         }
 
                         $processes[] = $process;
-                    } catch (\Exception $e) {
-                        $this->logger->critical($e);
-                        $msg = $e->getMessage();
-                        $output->writeln("<error>$msg</error>");
-
-                        $labour->reschedule();
-                    } catch (\ParseError $e) {
-                        $this->logger->critical($e);
-                        $msg = $e->getMessage();
-                        $output->writeln("<error>$msg</error>");
-
-                        $labour->reschedule();
-                    } catch (\Error $e) {
+                    } catch (\Throwable $e) {
                         $this->logger->critical($e);
                         $msg = $e->getMessage();
                         $output->writeln("<error>$msg</error>");
@@ -297,17 +285,7 @@ class Server extends Command
                     }
                 }
             }
-        } catch (\Exception $e) {
-            $this->logger->critical($e);
-            $msg = $e->getMessage();
-            $output->writeln("<error>$msg</error>");
-            return \Magento\Framework\Console\Cli::RETURN_FAILURE;
-        } catch (\ParseError $e) {
-            $this->logger->critical($e);
-            $msg = $e->getMessage();
-            $output->writeln("<error>$msg</error>");
-            return \Magento\Framework\Console\Cli::RETURN_FAILURE;
-        } catch (\Error $e) {
+        } catch (\Throwable $e) {
             $this->logger->critical($e);
             $msg = $e->getMessage();
             $output->writeln("<error>$msg</error>");
@@ -472,7 +450,7 @@ class Server extends Command
                     );
 
                     $count++;
-                } catch (\Exception $e) {
+                } catch (\Throwable $e) {
                     $this->logger->critical($e);
                 }
             }
