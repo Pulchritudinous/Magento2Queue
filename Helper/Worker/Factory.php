@@ -56,14 +56,16 @@ class Factory
      * Factory constructor
      *
      * @param \Magento\Framework\ObjectManagerInterface $objectManager
+     * @param \Magento\Framework\Stdlib\ArrayManager $arrHelper
+     * @param \Pulchritudinous\Queue\Helper\Worker\Config $workerConfig
      */
     public function __construct(
         \Magento\Framework\ObjectManagerInterface $objectManager,
-        Config $workerConfig,
-        ArrayManager $arrHelper = null
+        \Magento\Framework\Stdlib\ArrayManager $arrHelper,
+        \Pulchritudinous\Queue\Helper\Worker\Config $workerConfig
     ) {
         $this->objectManager = $objectManager;
-        $this->arrHelper = $arrHelper ?: $objectManager->get(ArrayManager::class);
+        $this->arrHelper = $arrHelper;
         $this->workerConfig = $workerConfig;
     }
 

@@ -26,9 +26,6 @@
 namespace Pulchritudinous\Queue\Model;
 
 use Magento\Framework\App\ObjectManager;
-use Magento\Framework\Stdlib\ArrayManager;
-use Magento\Framework\Api\DataObjectHelper;
-use Magento\Framework\DB\TransactionFactory;
 use Magento\Framework\Exception\StateException;
 use Magento\Framework\Exception\NotFoundException;
 
@@ -137,7 +134,7 @@ class Labour
     /**
      * Data Object Helper instance
      *
-     * @var DataObjectHelper
+     * @var \Magento\Framework\Api\DataObjectHelper
      */
     private $dataObjectHelper;
 
@@ -174,37 +171,38 @@ class Labour
      *
      * @param \Magento\Framework\Model\Context $context
      * @param \Magento\Framework\Registry $registry
-     * @param DataObjectHelper $dataObjectHelper
+     * @param \Magento\Framework\Api\DataObjectHelper $dataObjectHelper
+     * @param \Magento\Framework\Stdlib\ArrayManager $arrHelper
+     * @param \Magento\Framework\DB\TransactionFactory $transactionFactory
+     * @param \Psr\Log\LoggerInterface $logger
      * @param \Pulchritudinous\Queue\Model\ResourceModel\Labour $resource
      * @param \Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection $resourceCollection
+     * @param \Pulchritudinous\Queue\Helper\Worker\Config $workerConfig
+     * @param \Pulchritudinous\Queue\Helper\Worker\Factory $workerFactory
      * @param array $data
-     * @param ArrayManager $arrHelper
-     * @param TransactionFactory $transactionFactory
-     * @param LoggerInterface $logger
-     * @param WorkerConfig $workerConfig
-     * @param WorkerFactory $workerFactory
      */
     public function __construct(
         \Magento\Framework\Model\Context $context,
         \Magento\Framework\Registry $registry,
-        DataObjectHelper $dataObjectHelper,
+        \Magento\Framework\Api\DataObjectHelper $dataObjectHelper,
+        \Magento\Framework\Stdlib\ArrayManager $arrHelper,
+        \Magento\Framework\DB\TransactionFactory $transactionFactory,
+        \Psr\Log\LoggerInterface $logger,
         \Pulchritudinous\Queue\Model\ResourceModel\Labour $resource,
         \Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection $resourceCollection,
-        array $data = [],
-        ArrayManager $arrHelper = null,
-        TransactionFactory $transactionFactory = null,
-        LoggerInterface $logger = null,
-        WorkerConfig $workerConfig = null,
-        WorkerFactory $workerFactory = null
+        \Pulchritudinous\Queue\Helper\Worker\Config $workerConfig,
+        \Pulchritudinous\Queue\Helper\Worker\Factory $workerFactory,
+        array $data = []
+
     ) {
         $objectManager = ObjectManager::getInstance();
 
         $this->dataObjectHelper = $dataObjectHelper;
-        $this->arrHelper = $arrHelper ?: $objectManager->get(ArrayManager::class);
-        $this->transactionFactory = $transactionFactory ?: $objectManager->get(TransactionFactory::class);
-        $this->logger = $logger ?: $objectManager->get(LoggerInterface::class);
-        $this->workerConfig = $workerConfig ?: $objectManager->get(WorkerConfig::class);
-        $this->workerFactory = $workerFactory ?: $objectManager->get(WorkerFactory::class);
+        $this->arrHelper = $arrHelper;
+        $this->transactionFactory = $transactionFactory;
+        $this->logger = $logger;
+        $this->workerConfig = $workerConfig;
+        $this->workerFactory = $workerFactory;
         $this->objectManager = $objectManager;
 
         parent::__construct($context, $registry, $resource, $resourceCollection, $data);
@@ -355,8 +353,6 @@ class Labour
         ];
 
         $transaction = $this->transactionFactory->create();
-
-
 
         if (self::RULE_BATCH === $this->arrHelper->get('rule', $config)) {
             $queueCollection = $this->getBatchCollection();

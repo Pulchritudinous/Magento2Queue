@@ -178,18 +178,16 @@ class Queue
     /**
      * Receive number of queued labours.
      *
-     * @param  integer $batchSize
+     * @param  integer $qty
      *
      * @return null|array
      */
-    public function receive(int $batchSize = 1) :? array
+    public function receive(int $qty = 1) :? array
     {
-        $batchSize = max(1, $batchSize);
+        $qty = max(1, $qty);
         $running = [];
-        $pageNr = 0;
         $runningCollection = $this->getRunning();
         $runningWorkerCount = [];
-        $labours = [];
 
         foreach ($runningCollection as $labour) {
             $identity = "{$labour->getWorker()}-{$labour->getIdentity()}";
@@ -203,38 +201,50 @@ class Queue
             $runningWorkerCount[$labour->getWorker()]++;
         }
 
-        $iterator = $this->_objectManager->create('\Pulchritudinous\Queue\Model\LabourIterator', [
-            'resourceCollection' => $this->_getQueueCollection()
-        ]);
+        $collection = $this->_getQueueCollection();
+        $collection->setPageSize(50);
 
-        foreach ($iterator as $labour) {
-            $config = $this->_workerConfig->getWorkerConfigById($labour->getWorker());
-            $rule = $this->_arrHelper->get('rule', $config);
-            $limit = $this->_arrHelper->get('limit', $config);
+        $pages  = $collection->getLastPageNumber();
+        $pageNr = 1;
+        $labours = [];
 
-            if (null === $config) {
-                continue;
+        do {
+            $collection
+                ->setCurPage($pageNr)
+                ->load();
+
+            foreach ($collection as $labour) {
+                $config = $this->_workerConfig->getWorkerConfigById($labour->getWorker());
+                $rule = $this->_arrHelper->get('rule', $config);
+                $limit = $this->_arrHelper->get('limit', $config);
+
+                if (null === $config) {
+                    continue;
+                }
+
+                $identity = "{$labour->getWorker()}-{$labour->getIdentity()}";
+                $currentRunning = isset($runningWorkerCount[$labour->getWorker()])
+                    ? $runningWorkerCount[$labour->getWorker()]
+                    : 0;
+
+                if ($labour::RULE_WAIT === $rule && isset($running[$identity])) {
+                    continue;
+                }
+
+                if ($limit && $limit <= $currentRunning) {
+                    continue;
+                }
+
+                $labours[] = $this->_beforeReturn($labour, $config);
+
+                if (count($labours) >= $qty) {
+                    break;
+                }
             }
 
-            $identity = "{$labour->getWorker()}-{$labour->getIdentity()}";
-            $currentRunning = isset($runningWorkerCount[$labour->getWorker()])
-                ? $runningWorkerCount[$labour->getWorker()]
-                : 0;
-
-            if ($labour::RULE_WAIT === $rule && isset($running[$identity])) {
-                continue;
-            }
-
-            if ($limit && $limit <= $currentRunning) {
-                continue;
-            }
-
-            $labours[] = $this->_beforeReturn($labour, $config);
-
-            if (count($labours) >= $batchSize) {
-                break;
-            }
-        }
+            $pageNr++;
+            $collection->clear();
+        } while ($pageNr <= $pages);
 
         if (empty($labours)) {
             return null;
