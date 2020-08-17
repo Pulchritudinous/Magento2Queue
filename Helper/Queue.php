@@ -462,5 +462,15 @@ class Queue
 
         return $collection;
     }
+
+    /**
+     * Before server start.
+     *
+     * @return Queue
+     */
+    public function beforeServerStart() : Queue
+    {
+        return $this;
+    }
 }
 

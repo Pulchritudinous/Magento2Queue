@@ -224,6 +224,8 @@ class Server extends Command
             return \Magento\Framework\Console\Cli::RETURN_FAILURE;
         }
 
+        $this->queue->beforeServerStart();
+
         $this->_updateLastSchedule();
 
         if ($this->lockManager->isLocked(md5(self::LOCK_NAME))) {
