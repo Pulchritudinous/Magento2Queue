@@ -235,6 +235,9 @@ class Queue
                     continue;
                 }
 
+                $runningWorkerCount[$labour->getWorker()] = ++$currentRunning;
+                $running[$identity] = $identity;
+
                 $labours[] = $this->_beforeReturn($labour, $config);
 
                 if (count($labours) >= $qty) {
