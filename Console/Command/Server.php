@@ -308,6 +308,12 @@ class Server extends Command
     {
         foreach ($processes as $i => $process) {
             if (!$this->_isProcessRunning($process)) {
+                $code = $process->getExitCode();
+
+                if (255 === $code) {
+                    $process->getLabour()->reschedule();
+                }
+
                 unset($processes[$i]);
             }
         }
