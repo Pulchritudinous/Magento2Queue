@@ -94,6 +94,13 @@ class Labour
      *
      * @var string
      */
+    const RULE_RUN = 'run';
+
+    /**
+     * Labour rule.
+     *
+     * @var string
+     */
     const RULE_WAIT = 'wait';
 
     /**

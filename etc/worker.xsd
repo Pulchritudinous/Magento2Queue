@@ -96,7 +96,7 @@
 
     <xs:simpleType name="rule">
         <xs:restriction base="xs:string">
-            <xs:pattern value="(wait|batch|ignore|replace)"/>
+            <xs:pattern value="(wait|batch|ignore|replace|run)"/>
         </xs:restriction>
     </xs:simpleType>
 
