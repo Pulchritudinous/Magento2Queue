@@ -234,6 +234,10 @@ class Labour
             $this->_beforeExecute();
             $this->_execute();
             $this->_afterExecute();
+        } catch (\Exception $e) {
+            $this->logger->critical($e);
+
+            $this->reschedule();
         } catch (\Throwable $e) {
             $this->logger->critical($e);
 
