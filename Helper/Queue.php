@@ -215,6 +215,11 @@ class Queue
 
             foreach ($collection as $labour) {
                 $config = $this->_workerConfig->getWorkerConfigById($labour->getWorker());
+
+                if (!$config) {
+                    continue;
+                }
+
                 $rule = $this->_arrHelper->get('rule', $config);
                 $limit = $this->_arrHelper->get('limit', $config);
 
