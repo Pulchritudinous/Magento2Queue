@@ -187,18 +187,11 @@ class Queue
         $qty = max(1, $qty);
         $running = [];
         $runningCollection = $this->getRunning();
-        $runningWorkerCount = [];
 
         foreach ($runningCollection as $labour) {
             $identity = "{$labour->getWorker()}-{$labour->getIdentity()}";
 
             $running[$identity] = $identity;
-
-            if (!isset($runningWorkerCount[$labour->getWorker()])) {
-                $runningWorkerCount[$labour->getWorker()] = 0;
-            }
-
-            $runningWorkerCount[$labour->getWorker()]++;
         }
 
         $collection = $this->_getQueueCollection();
@@ -216,33 +209,18 @@ class Queue
             foreach ($collection as $labour) {
                 $config = $this->_workerConfig->getWorkerConfigById($labour->getWorker());
 
-                if (!$config) {
+                if (!$config || null === $config) {
                     continue;
                 }
 
                 $rule = $this->_arrHelper->get('rule', $config);
-                $limit = $this->_arrHelper->get('limit', $config);
-
-                if (null === $config) {
-                    continue;
-                }
-
                 $identity = "{$labour->getWorker()}-{$labour->getIdentity()}";
-                $currentRunning = isset($runningWorkerCount[$labour->getWorker()])
-                    ? $runningWorkerCount[$labour->getWorker()]
-                    : 0;
 
                 if ($labour::RULE_WAIT === $rule && isset($running[$identity])) {
                     continue;
                 }
 
-                if ($limit && $limit <= $currentRunning) {
-                    continue;
-                }
-
-                $runningWorkerCount[$labour->getWorker()] = ++$currentRunning;
                 $running[$identity] = $identity;
-
                 $labours[] = $this->_beforeReturn($labour, $config);
 
                 if (count($labours) >= $qty) {
