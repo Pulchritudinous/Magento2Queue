@@ -29,6 +29,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 
@@ -183,13 +184,19 @@ class Server extends Command
         $this->setName('pulchqueue:server');
         $this->setDescription('Start queue server');
 
-        $this->setDefinition([
-            new InputArgument('name', InputArgument::OPTIONAL, ''),
-            new InputOption(self::ARGUMENT_THREADS, '-t', InputOption::VALUE_NONE, 'How many simultaneous threads?'),
-            new InputOption(self::ARGUMENT_POLL, '-p', InputOption::VALUE_NONE, 'How often to look for executable labours (sec)?'),
-            new InputOption(self::ARGUMENT_PLAN_AHEAD, '-a', InputOption::VALUE_NONE, 'Recurring - Plan minutes ahead?'),
-            new InputOption(self::ARGUMENT_RESOLUTION, '-r', InputOption::VALUE_NONE, 'Recurring - Resolution?'),
-        ]);
+        $this->setDefinition(
+            new InputDefinition([
+                new InputOption(self::ARGUMENT_THREADS, 't', InputOption::VALUE_OPTIONAL),
+                new InputOption(self::ARGUMENT_POLL, 'p', InputOption::VALUE_OPTIONAL),
+                new InputOption(self::ARGUMENT_PLAN_AHEAD, 'a', InputOption::VALUE_OPTIONAL),
+                new InputOption(self::ARGUMENT_RESOLUTION, 'r', InputOption::VALUE_OPTIONAL),
+            ])
+        );
+
+        $this->addArgument(self::ARGUMENT_THREADS, InputArgument::OPTIONAL, __('How many simultaneous threads?'));
+        $this->addArgument(self::ARGUMENT_POLL, InputArgument::OPTIONAL, __('How often to look for executable labours (sec)?'));
+        $this->addArgument(self::ARGUMENT_PLAN_AHEAD, InputArgument::OPTIONAL, __('Recurring - Plan minutes ahead?'));
+        $this->addArgument(self::ARGUMENT_RESOLUTION, InputArgument::OPTIONAL, __('Recurring - Resolution?'));
 
         parent::configure();
     }
