@@ -321,7 +321,7 @@ class Queue
             ->addFieldToFilter('status', ['eq' => Labour::STATUS_PENDING])
             ->addFieldToFilter('execute_at', ['lteq' => time()])
             ->setOrder('priority', 'ASC')
-            ->setOrder('created_at', 'ASC');
+            ->setOrder('execute_at', 'ASC');
 
         return $collection;
     }
