@@ -276,13 +276,13 @@ class Server extends Command
                     try {
                         $process = $this->_getProcess($labour);
 
-                        $this->dbHelper->updateLabourField($labour, 'pid', (string) $process->getPid());
-
                         $process->start();
 
                         if (!$process->isRunning()) {
                             throw new ProcessFailedException($process);
                         }
+
+                        $this->dbHelper->updateLabourField($labour, 'pid', (string) $process->getPid());
 
                         $processes[] = $process;
                     } catch (\Throwable $e) {

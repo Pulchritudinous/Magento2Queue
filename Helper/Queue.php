@@ -38,42 +38,42 @@ class Queue
      *
      * @var \Magento\Framework\ObjectManager
      */
-    private $_objectManager;
+    public $_objectManager;
 
     /**
      * Transaction factory
      *
      * @var \Magento\Framework\DB\TransactionFactory
      */
-    private $_transactionFactory;
+    public $_transactionFactory;
 
     /**
      * Array helper
      *
      * @var \Magento\Framework\Stdlib\ArrayManager
      */
-    private $_arrHelper;
+    public $_arrHelper;
 
     /**
      * Worker config instance
      *
      * @var \Pulchritudinous\Queue\Helper\Worker\Config
      */
-    protected $_workerConfig = null;
+    public $_workerConfig = null;
 
     /**
      * Db helper instance
      *
      * @var \Pulchritudinous\Queue\Helper\Db
      */
-    protected $_dbHelper = null;
+    public $_dbHelper = null;
 
     /**
      * Worker config reader instance
      *
      * @var \Pulchritudinous\Queue\Config\Worker\Reader
      */
-    protected $_workerConfigReader = null;
+    public $_workerConfigReader = null;
 
     /**
      * Initial constructor
@@ -139,7 +139,7 @@ class Queue
 
         $options = $this->_arrHelper->remove('recurring', $options);
 
-        $this->_validateOptions($options);
+        $this->validateOptions($options);
 
         if (!is_string($identity)) {
             throw new InputException(__('Identity needs to be of type string'));
@@ -147,7 +147,7 @@ class Queue
 
         $delay = $this->_arrHelper->get('delay', $options, null);
         $rule = $this->_arrHelper->get('rule', $options);
-        $options = $this->_arrHelper->set('execute_at', $options, $this->_getWhen($delay ?: (int) $delay));
+        $options = $this->_arrHelper->set('execute_at', $options, $this->getWhen($delay ?: (int) $delay));
         $options = $this->_arrHelper->remove('delay', $options);
 
         if (Labour::RULE_IGNORE === $rule) {
@@ -168,7 +168,7 @@ class Queue
             ->setIdentity($identity)
             ->setAttempts(0)
             ->setByRecurring($byRecurring)
-            ->setPayload($this->_ensureArrayData($payload))
+            ->setPayload($this->ensureArrayData($payload))
             ->setStatus(Labour::STATUS_PENDING)
             ->save();
 
@@ -194,7 +194,7 @@ class Queue
             $running[$identity] = $identity;
         }
 
-        $collection = $this->_getQueueCollection();
+        $collection = $this->getQueueCollection();
         $collection->setPageSize(50);
 
         $pages  = $collection->getLastPageNumber();
@@ -221,7 +221,7 @@ class Queue
                 }
 
                 $running[$identity] = $identity;
-                $labours[] = $this->_beforeReturn($labour, $config);
+                $labours[] = $this->beforeReturn($labour, $config);
 
                 if (count($labours) >= $qty) {
                     break;
@@ -246,7 +246,7 @@ class Queue
      *
      * @return boolean
      */
-    protected function _validateOptions(array $options) : bool
+    public function validateOptions(array $options) : bool
     {
         $options = $this->_arrHelper->remove('code', $options);
 
@@ -277,7 +277,7 @@ class Queue
      *
      * @return int
      */
-    protected function _getWhen(int $delay = null) : int
+    public function getWhen(int $delay = null) : int
     {
         return $this->_objectManager->create('Pulchritudinous\Queue\Helper\Data')->getWhen($delay);
     }
@@ -289,13 +289,13 @@ class Queue
      *
      * @return array
      */
-    protected function _ensureArrayData(array $data) : array
+    public function ensureArrayData(array $data) : array
     {
         $return = [];
 
         foreach ($data as $key => $value) {
             if (is_array($value)) {
-                $return[$key] = $this->_ensureArrayData($value);
+                $return[$key] = $this->ensureArrayData($value);
 
                 continue;
             }
@@ -315,7 +315,7 @@ class Queue
      *
      * @return Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection
      */
-    protected function _getQueueCollection() : \Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection
+    public function getQueueCollection() : \Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection
     {
         $collection = $this->_objectManager->create('Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection')
             ->addFieldToFilter('status', ['eq' => Labour::STATUS_PENDING])
@@ -334,13 +334,13 @@ class Queue
      *
      * @return Labour
      */
-    protected function _beforeReturn(Labour $labour, array $config) : Labour
+    public function beforeReturn(Labour $labour, array $config) : Labour
     {
         $rule = $this->_arrHelper->get('rule', $config);
         $transaction = $this->_transactionFactory->create();
 
         if ($rule === Labour::RULE_BATCH) {
-            $queueCollection = $this->_getQueueCollection()
+            $queueCollection = $this->getQueueCollection()
                 ->addFieldToFilter('identity', ['eq' => $labour->getIdentity()])
                 ->addFieldToFilter('worker', ['eq' => $labour->getWorker()]);
 
@@ -424,7 +424,7 @@ class Queue
         $labour
             ->setStatus(Labour::STATUS_PENDING)
             ->setAttempts((int) $labour->getAttempts() + 1)
-            ->setExecuteAt($this->_getWhen($delay))
+            ->setExecuteAt($this->getWhen($delay))
             ->save();
 
         return true;

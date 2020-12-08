@@ -45,6 +45,7 @@
             <xs:element maxOccurs="1" minOccurs="1" name="forge" type="xs:string"/>
             <xs:element maxOccurs="1" minOccurs="1" name="priority" type="zeroOrMore"/>
             <xs:element maxOccurs="1" minOccurs="0" name="rule" type="rule"/>
+            <xs:element maxOccurs="1" minOccurs="0" name="mode" type="mode"/>
             <xs:element maxOccurs="1" minOccurs="1" name="delay" type="zeroOrMore"/>
             <xs:element maxOccurs="1" minOccurs="1" name="attempts" type="moreThanZero"/>
             <xs:element maxOccurs="1" minOccurs="1" name="reschedule" type="zeroOrMore"/>
@@ -66,6 +67,7 @@
         <xs:choice maxOccurs="unbounded">
             <xs:element maxOccurs="1" minOccurs="1" name="priority" type="zeroOrMore"/>
             <xs:element maxOccurs="1" minOccurs="0" name="rule" type="rule"/>
+            <xs:element maxOccurs="1" minOccurs="0" name="mode" type="mode"/>
             <xs:element maxOccurs="1" minOccurs="1" name="delay" type="zeroOrMore"/>
             <xs:element maxOccurs="1" minOccurs="1" name="attempts" type="moreThanZero"/>
             <xs:element maxOccurs="1" minOccurs="1" name="reschedule" type="zeroOrMore"/>
@@ -96,7 +98,13 @@
 
     <xs:simpleType name="rule">
         <xs:restriction base="xs:string">
-            <xs:pattern value="(wait|batch|ignore|replace|run)"/>
+            <xs:pattern value="(wait|ignore|replace|run)"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="mode">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="(batch)"/>
         </xs:restriction>
     </xs:simpleType>
 

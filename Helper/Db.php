@@ -37,21 +37,12 @@ class Db
     protected $_resourceConnection;
 
     /**
-     * Labour model instance
-     *
-     * @var \Pulchritudinous\Queue\Model\Labour
-     */
-    protected $_labourModel = null;
-
-    /**
      * @param \Magento\Framework\App\Helper\Context $context
      */
     public function __construct(
-        \Magento\Framework\App\ResourceConnection $resourceConnection,
-        \Pulchritudinous\Queue\Model\Labour $labourModel
+        \Magento\Framework\App\ResourceConnection $resourceConnection
     ) {
         $this->_resourceConnection = $resourceConnection;
-        $this->_labourModel = $labourModel;
     }
 
     /**
@@ -65,7 +56,7 @@ class Db
      */
     public function setStatusOnUnprocessedByWorkerIdentity(string $status, string $worker, string $identity) : bool
     {
-        $adapter = $this->_resourceConnection->getConnection();
+        $adapter = $this->getAdapter();
 
         $data = [
             'status' => (string) $status,
@@ -75,9 +66,9 @@ class Db
             $this->getTablename('pulchritudinous_queue_labour'),
             $data,
             [
-                'status = ?'    => $this->_labourModel::STATUS_PENDING,
-                'worker = ?'    => (string) $worker,
-                'identity = ?'  => (string) $identity,
+                'status = ?' => \Pulchritudinous\Queue\Model\Labour::STATUS_PENDING,
+                'worker = ?' => (string) $worker,
+                'identity = ?' => (string) $identity,
             ]
         );
 
@@ -94,7 +85,7 @@ class Db
      */
     public function hasUnprocessedWorkerIdentity(string $worker, string $identity) : bool
     {
-        $adapter = $this->_resourceConnection->getConnection();
+        $adapter = $this->getAdapter();
 
         $select = $adapter->select()
             ->from($this->getTablename('pulchritudinous_queue_labour'), 'id')
@@ -103,9 +94,9 @@ class Db
             ->where('status = :status');
 
         $bind = [
-            ':worker'   => (string) $worker,
+            ':worker' => (string) $worker,
             ':identity' => (string) $identity,
-            ':status'   => $this->_labourModel::STATUS_PENDING,
+            ':status' => \Pulchritudinous\Queue\Model\Labour::STATUS_PENDING,
         ];
 
         return !empty($adapter->fetchOne($select, $bind));
@@ -122,7 +113,7 @@ class Db
      */
     public function updateLabourField(Labour $labour, string $field, string $value = null) : bool
     {
-        $adapter = $this->_resourceConnection->getConnection();
+        $adapter = $this->getAdapter();
         $data = [
             $field => $value,
         ];
@@ -144,17 +135,27 @@ class Db
     }
 
     /**
+     * Get DB adapter
+     *
+     * @return \Magento\Framework\DB\Adapter\AdapterInterface
+     */
+    public function getAdapter() : \Magento\Framework\DB\Adapter\AdapterInterface
+    {
+        return $this->_resourceConnection->getConnection();
+    }
+
+    /**
      * Get Table name using direct query
      *
      * @param  string $tableName
      *
-     * @return stirng
+     * @return string
      */
     public function getTablename(string $tableName) : string
     {
         /* Create Connection */
-        $connection  = $this->_resourceConnection->getConnection();
-        $tableName   = $connection->getTableName($tableName);
+        $connection = $this->_resourceConnection->getConnection();
+        $tableName = $connection->getTableName($tableName);
 
         return $tableName;
     }

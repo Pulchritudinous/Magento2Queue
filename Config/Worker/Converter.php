@@ -33,14 +33,24 @@ class Converter
      *
      * @var \Magento\Framework\ObjectManager
      */
-    private $objectManager;
+    protected $objectManager;
 
     /**
+     * Appplication state
+     *
+     * @var \Magento\Framework\App\State
+     */
+    protected $appState;
+
+    /**
+     * @param \Magento\Framework\App\State $appState
      * @param \Magento\Framework\App\Helper\Context $context
      */
     public function __construct(
+        \Magento\Framework\App\State $appState,
         \Magento\Framework\ObjectManagerInterface $objectManager
     ) {
+        $this->appState = $appState;
         $this->objectManager = $objectManager;
     }
 
@@ -127,7 +137,7 @@ class Converter
         $result = [];
         /** @var \DOMText $schedules */
         foreach ($jobConfig->childNodes as $schedules) {
-            if ($schedules->nodeName == 'schedule') {
+            if ('schedule' === $schedules->nodeName) {
                 if (!empty($schedules->nodeValue)) {
                     $result['schedule'] = $schedules->nodeValue;
                 }
@@ -135,7 +145,7 @@ class Converter
                 continue;
             }
 
-            if ($schedules->nodeName == 'is_allowed') {
+            if ('is_allowed' === $schedules->nodeName) {
                 if (!empty($schedules->nodeValue)) {
                     list($recClass, $recMethod) = explode('::', $schedules->nodeValue);
 
@@ -158,10 +168,9 @@ class Converter
      *
      * @return bool
      */
-    public function isDeveloperMode() : bool
+    protected function isDeveloperMode() : bool
     {
-        $appState = $this->objectManager->get('Magento\Framework\App\State');
-        return $appState->getMode() == $appState::MODE_DEVELOPER;
+        return $this->appState->getMode() == $this->appState::MODE_DEVELOPER;
     }
 }
 

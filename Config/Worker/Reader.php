@@ -26,19 +26,32 @@ namespace Pulchritudinous\Queue\Config\Worker;
 class Reader
     extends \Magento\Framework\Config\Reader\Filesystem
 {
+    /**
+     * @var array
+     */
     protected $_idAttributes = [
         '/config/queue/worker' => 'id',
     ];
 
+    /**
+     * @param \Magento\Framework\Config\FileResolverInterface $fileResolver
+     * @param Converter $converter
+     * @param SchemaLocator $schemaLocator
+     * @param \Magento\Framework\Config\ValidationStateInterface $validationState
+     * @param string $fileName
+     * @param array $idAttributes
+     * @param string $domDocumentClass
+     * @param string $defaultScope
+     */
     public function __construct(
         \Magento\Framework\Config\FileResolverInterface $fileResolver,
         Converter $converter,
         SchemaLocator $schemaLocator,
         \Magento\Framework\Config\ValidationStateInterface $validationState,
-        $fileName = 'worker.xml',
-        $idAttributes = [],
-        $domDocumentClass = 'Magento\Framework\Config\Dom',
-        $defaultScope = 'global'
+        string $fileName = 'worker.xml',
+        array $idAttributes = [],
+        string $domDocumentClass = 'Magento\Framework\Config\Dom',
+        string $defaultScope = 'global'
     ) {
         parent::__construct(
             $fileResolver,

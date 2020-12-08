@@ -28,8 +28,15 @@ use Magento\Framework\Module\Dir;
 class SchemaLocator
     implements \Magento\Framework\Config\SchemaLocatorInterface
 {
-    protected $_schema = null;
-    protected $_perFileSchema = null;
+    /**
+     * @var string
+     */
+    protected $_schema;
+
+    /**
+     * @var string
+     */
+    protected $_perFileSchema;
 
     /**
      * @param \Magento\Framework\Module\Dir\Reader $moduleReader
