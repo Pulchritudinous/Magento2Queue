@@ -199,6 +199,7 @@ class Queue
 
         $pages  = $collection->getLastPageNumber();
         $pageNr = 1;
+        $bailout = false;
         $labours = [];
 
         do {
@@ -224,13 +225,14 @@ class Queue
                 $labours[] = $this->_beforeReturn($labour, $config);
 
                 if (count($labours) >= $qty) {
+                    $bailout = true;
                     break;
                 }
             }
 
             $pageNr++;
             $collection->clear();
-        } while ($pageNr <= $pages);
+        } while ($pageNr <= $pages && $bailout == false);
 
         if (empty($labours)) {
             return null;
