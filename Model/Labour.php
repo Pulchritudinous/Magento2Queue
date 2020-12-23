@@ -222,12 +222,12 @@ class Labour
     {
         try {
             if (!$this->getId()) {
-                throw new NotFoundException('Unable to execute labour');
+                throw new NotFoundException(__('Unable to execute labour'));
             }
 
             if (null === $this->getWorkerConfig()) {
                 throw new StateException(
-                    "Unable to execute labour with ID #{$this->getId()} and worker code '{$this->getWorker()}'"
+                    __("Unable to execute labour with ID #{$this->getId()} and worker code '{$this->getWorker()}'")
                 );
             }
 

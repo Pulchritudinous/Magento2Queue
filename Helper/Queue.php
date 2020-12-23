@@ -216,7 +216,7 @@ class Queue
                 $rule = $this->_arrHelper->get('rule', $config);
                 $identity = "{$labour->getWorker()}-{$labour->getIdentity()}";
 
-                if ($labour::RULE_WAIT === $rule && isset($running[$identity])) {
+                if (in_array($rule, [$labour::RULE_WAIT, $labour::RULE_BATCH]) && isset($running[$identity])) {
                     continue;
                 }
 
