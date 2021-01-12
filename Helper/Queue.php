@@ -147,7 +147,7 @@ class Queue
 
         $delay = $this->_arrHelper->get('delay', $options, null);
         $rule = $this->_arrHelper->get('rule', $options);
-        $options = $this->_arrHelper->set('execute_at', $options, $this->_getWhen($delay ?: (int) $delay));
+        $options = $this->_arrHelper->set('execute_at', $options, $this->_getWhen($delay ? ((int) $delay) : null));
         $options = $this->_arrHelper->remove('delay', $options);
 
         if (Labour::RULE_IGNORE === $rule) {
@@ -419,7 +419,7 @@ class Queue
      *
      * @return boolean
      */
-    public function reschedule(Labour $labour, $delay = null) : bool
+    public function reschedule(Labour $labour, int $delay = null) : bool
     {
         $config = $this->_workerConfig->getWorkerConfigById($labour->getWorker());
 

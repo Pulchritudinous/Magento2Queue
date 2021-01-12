@@ -49,7 +49,7 @@ class Data extends AbstractHelper
     {
         $when = time();
 
-        if (is_numeric($delay)) {
+        if (null !== $delay) {
             $when += $delay;
         }
 
