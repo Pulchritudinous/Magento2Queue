@@ -56,7 +56,6 @@ class Converter
         $output = ['workers' => [], 'default' => [], 'server_default' => []];
         $xpath = new \DOMXPath($source);
         $nodes = $xpath->evaluate('/config/queue/worker');
-        $devMode = $this->isDeveloperMode();
 
         /** @var $node \DOMNode */
         foreach ($nodes as $node) {
@@ -135,7 +134,7 @@ class Converter
                 continue;
             }
 
-            if ($schedules->nodeName == 'is_allowed') {
+            if ('is_allowed' == $schedules->nodeName) {
                 if (!empty($schedules->nodeValue)) {
                     list($recClass, $recMethod) = explode('::', $schedules->nodeValue);
 
@@ -151,17 +150,6 @@ class Converter
         }
 
         return $result;
-    }
-
-    /**
-     * Developer mode
-     *
-     * @return bool
-     */
-    public function isDeveloperMode() : bool
-    {
-        $appState = $this->objectManager->get('Magento\Framework\App\State');
-        return $appState->getMode() == $appState::MODE_DEVELOPER;
     }
 }
 
