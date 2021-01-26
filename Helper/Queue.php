@@ -147,7 +147,7 @@ class Queue
 
         $delay = $this->_arrHelper->get('delay', $options, null);
         $rule = $this->_arrHelper->get('rule', $options);
-        $options = $this->_arrHelper->set('execute_at', $options, $this->getWhen($delay ?: (int) $delay));
+        $options = $this->_arrHelper->set('execute_at', $options, $this->_getWhen($delay ? ((int) $delay) : null));
         $options = $this->_arrHelper->remove('delay', $options);
 
         if (Labour::RULE_IGNORE === $rule) {
@@ -199,6 +199,7 @@ class Queue
 
         $pages  = $collection->getLastPageNumber();
         $pageNr = 1;
+        $bailout = false;
         $labours = [];
 
         do {
@@ -216,7 +217,7 @@ class Queue
                 $rule = $this->_arrHelper->get('rule', $config);
                 $identity = "{$labour->getWorker()}-{$labour->getIdentity()}";
 
-                if ($labour::RULE_WAIT === $rule && isset($running[$identity])) {
+                if (in_array($rule, [$labour::RULE_WAIT, $labour::RULE_BATCH]) && isset($running[$identity])) {
                     continue;
                 }
 
@@ -224,13 +225,14 @@ class Queue
                 $labours[] = $this->beforeReturn($labour, $config);
 
                 if (count($labours) >= $qty) {
+                    $bailout = true;
                     break;
                 }
             }
 
             $pageNr++;
             $collection->clear();
-        } while ($pageNr <= $pages);
+        } while ($pageNr <= $pages && $bailout == false);
 
         if (empty($labours)) {
             return null;
@@ -321,7 +323,7 @@ class Queue
             ->addFieldToFilter('status', ['eq' => Labour::STATUS_PENDING])
             ->addFieldToFilter('execute_at', ['lteq' => time()])
             ->setOrder('priority', 'ASC')
-            ->setOrder('created_at', 'ASC');
+            ->setOrder('execute_at', 'ASC');
 
         return $collection;
     }
@@ -417,7 +419,7 @@ class Queue
      *
      * @return boolean
      */
-    public function reschedule(Labour $labour, $delay = null) : bool
+    public function reschedule(Labour $labour, int $delay = null) : bool
     {
         $config = $this->_workerConfig->getWorkerConfigById($labour->getWorker());
 

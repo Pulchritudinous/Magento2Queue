@@ -66,7 +66,6 @@ class Converter
         $output = ['workers' => [], 'default' => [], 'server_default' => []];
         $xpath = new \DOMXPath($source);
         $nodes = $xpath->evaluate('/config/queue/worker');
-        $devMode = $this->isDeveloperMode();
 
         /** @var $node \DOMNode */
         foreach ($nodes as $node) {
@@ -161,16 +160,6 @@ class Converter
         }
 
         return $result;
-    }
-
-    /**
-     * Developer mode
-     *
-     * @return bool
-     */
-    protected function isDeveloperMode() : bool
-    {
-        return $this->appState->getMode() == $this->appState::MODE_DEVELOPER;
     }
 }
 
