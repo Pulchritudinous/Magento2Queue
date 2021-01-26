@@ -222,7 +222,7 @@ class Server extends Command
         }
 
         if ($planAhead < 1) {
-            $output->writeln("<error>planahead must be greater than 0</error>");
+            $output->writeln("<error>plan ahead must be greater than 0</error>");
             return \Magento\Framework\Console\Cli::RETURN_FAILURE;
         }
 
