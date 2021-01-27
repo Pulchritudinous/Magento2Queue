@@ -2,7 +2,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Pulchritudinous
+ * Copyright (c) 2021 Pulchritudinous
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,79 +34,91 @@ use Magento\Framework\Exception\NoSuchEntityException;
 class Queue
 {
     /**
-     * Object manager
-     *
-     * @var \Magento\Framework\ObjectManager
-     */
-    public $_objectManager;
-
-    /**
      * Transaction factory
      *
      * @var \Magento\Framework\DB\TransactionFactory
      */
-    public $_transactionFactory;
+    public $transactionFactory;
 
     /**
      * Array helper
      *
      * @var \Magento\Framework\Stdlib\ArrayManager
      */
-    public $_arrHelper;
+    public $arrHelper;
 
     /**
      * Worker config instance
      *
      * @var \Pulchritudinous\Queue\Helper\Worker\Config
      */
-    public $_workerConfig = null;
+    public $workerConfig;
 
     /**
      * Db helper instance
      *
      * @var \Pulchritudinous\Queue\Helper\Db
      */
-    public $_dbHelper = null;
+    public $dbHelper;
 
     /**
      * Worker config reader instance
      *
      * @var \Pulchritudinous\Queue\Config\Worker\Reader
      */
-    public $_workerConfigReader = null;
+    public $workerConfigReader;
+
+    /**
+     * Queue helper data
+     *
+     * @var \Pulchritudinous\Queue\Helper\Data
+     */
+    public $queueHelperData;
+
+    /**
+     * Labour factory
+     *
+     * @var \Pulchritudinous\Queue\Model\LabourFactory
+     */
+    public $labourFactory;
 
     /**
      * Initial constructor
      *
      * @param \Magento\Framework\Stdlib\ArrayManager $arrHelper
-     * @param \Magento\Framework\ObjectManagerInterface $objectManager
      * @param \Magento\Framework\DB\TransactionFactory $transactionFactory
-     * @param \Pulchritudinous\Queue\Config\Worker\Reader $workerConfigReader
-     * @param \Pulchritudinous\Queue\Helper\Worker\Config $workerConfig
      * @param \Pulchritudinous\Queue\Helper\Db $dbHelper
+     * @param \Pulchritudinous\Queue\Helper\Data $queueHelperData,
+     * @param \Pulchritudinous\Queue\Helper\Worker\Config $workerConfig,
+     * @param \Pulchritudinous\Queue\Model\LabourFactory $labourFactory,
+     * @param \Pulchritudinous\Queue\Config\Worker\Reader $workerConfigReader,
+     * @param \Pulchritudinous\Queue\Model\ResourceModel\Labour\CollectionFactory $resourceCollectionFactory
      */
     public function __construct(
         \Magento\Framework\Stdlib\ArrayManager $arrHelper,
-        \Magento\Framework\ObjectManagerInterface $objectManager,
         \Magento\Framework\DB\TransactionFactory $transactionFactory,
-        \Pulchritudinous\Queue\Config\Worker\Reader $workerConfigReader,
+        \Pulchritudinous\Queue\Helper\Db $dbHelper,
+        \Pulchritudinous\Queue\Helper\Data $queueHelperData,
         \Pulchritudinous\Queue\Helper\Worker\Config $workerConfig,
-        \Pulchritudinous\Queue\Helper\Db $dbHelper
+        \Pulchritudinous\Queue\Model\LabourFactory $labourFactory,
+        \Pulchritudinous\Queue\Config\Worker\Reader $workerConfigReader,
+        \Pulchritudinous\Queue\Model\ResourceModel\Labour\CollectionFactory $resourceCollectionFactory
     ) {
-        $this->_objectManager = $objectManager;
-        $this->_transactionFactory = $transactionFactory;
-        $this->_arrHelper = $arrHelper;
-        $this->_workerConfig = $workerConfig;
-        $this->_dbHelper = $dbHelper;
-        $this->_workerConfigReader = $workerConfigReader;
+        $this->dbHelper = $dbHelper;
+        $this->arrHelper = $arrHelper;
+        $this->workerConfig = $workerConfig;
+        $this->labourFactory = $labourFactory;
+        $this->queueHelperData = $queueHelperData;
+        $this->workerConfigReader = $workerConfigReader;
+        $this->transactionFactory = $transactionFactory;
     }
 
     /**
      * Add a job to the queue that will be asynchronously handled by a worker.
      *
-     * @param  string $worker
-     * @param  array $payload
-     * @param  array $options
+     * @param string $worker
+     * @param array $payload
+     * @param array $options
      *
      * @return Labour
      *
@@ -115,7 +127,7 @@ class Queue
      */
     public function add(string $worker, array $payload = [], array $options = []) :? Labour
     {
-        $config = $this->_workerConfig->getWorkerConfigById($worker);
+        $config = $this->workerConfig->getWorkerConfigById($worker);
 
         if (null === $config) {
             $message = __(
@@ -126,18 +138,18 @@ class Queue
             throw new NoSuchEntityException($message);
         }
 
-        $byRecurring = (bool) $this->_arrHelper->get('by_recurring', $options, false);
-        $options = $this->_arrHelper->remove('by_recurring', $options);
+        $byRecurring = (bool) $this->arrHelper->get('by_recurring', $options, false);
+        $options = $this->arrHelper->remove('by_recurring', $options);
 
-        $identity = $this->_arrHelper->get('identity', $options, '');
-        $options = $this->_arrHelper->remove('identity', $options);
+        $identity = $this->arrHelper->get('identity', $options, '');
+        $options = $this->arrHelper->remove('identity', $options);
 
         $options = array_merge(
             $config,
             $options
         );
 
-        $options = $this->_arrHelper->remove('recurring', $options);
+        $options = $this->arrHelper->remove('recurring', $options);
 
         $this->validateOptions($options);
 
@@ -145,24 +157,22 @@ class Queue
             throw new InputException(__('Identity needs to be of type string'));
         }
 
-        $delay = $this->_arrHelper->get('delay', $options, null);
-        $rule = $this->_arrHelper->get('rule', $options);
-        $options = $this->_arrHelper->set('execute_at', $options, $this->_getWhen($delay ? ((int) $delay) : null));
-        $options = $this->_arrHelper->remove('delay', $options);
+        $delay = $this->arrHelper->get('delay', $options, null);
+        $rule = $this->arrHelper->get('rule', $options);
+        $options = $this->arrHelper->set('execute_at', $options, $this->getWhen($delay ? ((int) $delay) : null));
+        $options = $this->arrHelper->remove('delay', $options);
 
         if (Labour::RULE_IGNORE === $rule) {
-            $hasLabour = $this->_dbHelper->hasUnprocessedWorkerIdentity($worker, $identity);
+            $hasLabour = $this->dbHelper->hasUnprocessedWorkerIdentity($worker, $identity);
 
             if (true === $hasLabour) {
                 return null;
             }
         } elseif (Labour::RULE_REPLACE === $rule) {
-            $this->_dbHelper->setStatusOnUnprocessedByWorkerIdentity('replaced', $worker, $identity);
+            $this->dbHelper->setStatusOnUnprocessedByWorkerIdentity('replaced', $worker, $identity);
         }
 
-        $labour = $this->_objectManager->create('\Pulchritudinous\Queue\Model\Labour');
-
-        $labour
+        $labour = $this->labourFactory->create()
             ->setWorker($worker)
             ->addData($options)
             ->setIdentity($identity)
@@ -178,7 +188,7 @@ class Queue
     /**
      * Receive number of queued labours.
      *
-     * @param  integer $qty
+     * @param int $qty
      *
      * @return null|array
      */
@@ -208,13 +218,13 @@ class Queue
                 ->load();
 
             foreach ($collection as $labour) {
-                $config = $this->_workerConfig->getWorkerConfigById($labour->getWorker());
+                $config = $this->workerConfig->getWorkerConfigById($labour->getWorker());
 
                 if (!$config || null === $config) {
                     continue;
                 }
 
-                $rule = $this->_arrHelper->get('rule', $config);
+                $rule = $this->arrHelper->get('rule', $config);
                 $identity = "{$labour->getWorker()}-{$labour->getIdentity()}";
 
                 if (in_array($rule, [$labour::RULE_WAIT, $labour::RULE_BATCH]) && isset($running[$identity])) {
@@ -244,13 +254,13 @@ class Queue
     /**
      * Get allowed options.
      *
-     * @param  array $options
+     * @param array $options
      *
      * @return boolean
      */
     public function validateOptions(array $options) : bool
     {
-        $options = $this->_arrHelper->remove('code', $options);
+        $options = $this->arrHelper->remove('code', $options);
 
         array_walk_recursive($options, function (&$value) { $value = (string) $value; });
 
@@ -267,7 +277,7 @@ class Queue
             ]
         ])->getDom()->saveXML();
 
-        $this->_workerConfigReader->validateWorderConfig($xml);
+        $this->workerConfigReader->validateWorderConfig($xml);
 
         return true;
     }
@@ -275,13 +285,13 @@ class Queue
     /**
      * Parses when the labour should be executed.
      *
-     * @param  null|int $delay
+     * @param null|int $delay
      *
      * @return int
      */
     public function getWhen(int $delay = null) : int
     {
-        return $this->_objectManager->create('Pulchritudinous\Queue\Helper\Data')->getWhen($delay);
+        return $this->queueHelperData->getWhen($delay);
     }
 
     /**
@@ -319,7 +329,7 @@ class Queue
      */
     public function getQueueCollection() : \Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection
     {
-        $collection = $this->_objectManager->create('Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection')
+        $collection = $this->resourceCollectionFactory->create()
             ->addFieldToFilter('status', ['eq' => Labour::STATUS_PENDING])
             ->addFieldToFilter('execute_at', ['lteq' => time()])
             ->setOrder('priority', 'ASC')
@@ -331,15 +341,15 @@ class Queue
     /**
      * Before labour is returned.
      *
-     * @param  Labour $labour
-     * @param  array $config
+     * @param Labour $labour
+     * @param array $config
      *
      * @return Labour
      */
     public function beforeReturn(Labour $labour, array $config) : Labour
     {
-        $rule = $this->_arrHelper->get('rule', $config);
-        $transaction = $this->_transactionFactory->create();
+        $rule = $this->arrHelper->get('rule', $config);
+        $transaction = $this->transactionFactory->create();
 
         if ($rule === Labour::RULE_BATCH) {
             $queueCollection = $this->getQueueCollection()
@@ -371,7 +381,7 @@ class Queue
     /**
      * Get all running labours.
      *
-     * @param  boolean $includeUnknown
+     * @param boolean $includeUnknown
      *
      * @return Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection
      */
@@ -386,7 +396,7 @@ class Queue
             $statuses[] = Labour::STATUS_UNKNOWN;
         }
 
-        $collection = $this->_objectManager->create('Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection')
+        $collection = $this->resourceCollectionFactory->create()
             ->addFieldToFilter('status', ['in' => $statuses]);
 
         return $collection;
@@ -395,7 +405,7 @@ class Queue
     /**
      * Mark labour as finished.
      *
-     * @param  Labour
+     * @param Labour
      *
      * @return Labour
      */
@@ -414,14 +424,14 @@ class Queue
     /**
      * Reschedule labour to be run at a later time.
      *
-     * @param  Labour $labour
-     * @param  null|integer $delay
+     * @param Labour $labour
+     * @param null|int $delay
      *
      * @return boolean
      */
     public function reschedule(Labour $labour, int $delay = null) : bool
     {
-        $config = $this->_workerConfig->getWorkerConfigById($labour->getWorker());
+        $config = $this->workerConfig->getWorkerConfigById($labour->getWorker());
 
         $labour
             ->setStatus(Labour::STATUS_PENDING)
@@ -439,7 +449,7 @@ class Queue
      */
     public function clearMissingRecurring() : \Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection
     {
-        $collection = $this->objectManager->create('Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection')
+        $collection = $this->resourceCollectionFactory->create()
             ->addFieldToFilter('status', ['eq' => Labour::STATUS_PENDING])
             ->addFieldToFilter('by_recurring', ['eq' => 1])
             ->addFieldToFilter('execute_at', ['lt' => time()]);

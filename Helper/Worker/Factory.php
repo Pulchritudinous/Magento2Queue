@@ -2,7 +2,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Pulchritudinous
+ * Copyright (c) 2021 Pulchritudinous
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,37 +36,37 @@ class Factory
      *
      * @var \Magento\Framework\ObjectManagerInterface
      */
-    protected $_objectManager = null;
+    public $objectManager;
 
     /**
      * Worker config instance
      *
      * @var \Pulchritudinous\Queue\Helper\Worker
      */
-    protected $workerConfig = null;
+    public $workerConfig;
 
     /**
      * Array helper
      *
      * @var \Magento\Framework\Stdlib\ArrayManager
      */
-    private $arrHelper = null;
+    public $arrHelper;
 
     /**
      * Factory constructor
      *
-     * @param \Magento\Framework\ObjectManagerInterface $objectManager
      * @param \Magento\Framework\Stdlib\ArrayManager $arrHelper
+     * @param \Magento\Framework\ObjectManagerInterface $objectManager
      * @param \Pulchritudinous\Queue\Helper\Worker\Config $workerConfig
      */
     public function __construct(
-        \Magento\Framework\ObjectManagerInterface $objectManager,
         \Magento\Framework\Stdlib\ArrayManager $arrHelper,
+        \Magento\Framework\ObjectManagerInterface $objectManager,
         \Pulchritudinous\Queue\Helper\Worker\Config $workerConfig
     ) {
         $this->objectManager = $objectManager;
-        $this->arrHelper = $arrHelper;
         $this->workerConfig = $workerConfig;
+        $this->arrHelper = $arrHelper;
     }
 
     /**

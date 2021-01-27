@@ -2,7 +2,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Pulchritudinous
+ * Copyright (c) 2021 Pulchritudinous
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,23 +34,23 @@ class Db
      *
      * @var \Magento\Framework\App\ResourceConnection
      */
-    protected $_resourceConnection;
+    public $resourceConnection;
 
     /**
-     * @param \Magento\Framework\App\Helper\Context $context
+     * @param \Magento\Framework\App\ResourceConnection $resourceConnection
      */
     public function __construct(
         \Magento\Framework\App\ResourceConnection $resourceConnection
     ) {
-        $this->_resourceConnection = $resourceConnection;
+        $this->resourceConnection = $resourceConnection;
     }
 
     /**
      * Set status to a unprocessed labour by worker and identity.
      *
-     * @param  string $status
-     * @param  string $worker
-     * @param  string $identity
+     * @param string $status
+     * @param string $worker
+     * @param string $identity
      *
      * @return boolean
      */
@@ -63,7 +63,7 @@ class Db
         ];
 
         $result = $adapter->update(
-            $this->getTablename('pulchritudinous_queue_labour'),
+            $this->getTableName('pulchritudinous_queue_labour'),
             $data,
             [
                 'status = ?' => \Pulchritudinous\Queue\Model\Labour::STATUS_PENDING,
@@ -78,8 +78,8 @@ class Db
     /**
      * Checks if labour exists in queue by worker code and identity.
      *
-     * @param  string $worker
-     * @param  string $identity
+     * @param string $worker
+     * @param string $identity
      *
      * @return boolean
      */
@@ -88,7 +88,7 @@ class Db
         $adapter = $this->getAdapter();
 
         $select = $adapter->select()
-            ->from($this->getTablename('pulchritudinous_queue_labour'), 'id')
+            ->from($this->getTableName('pulchritudinous_queue_labour'), 'id')
             ->where('worker = :worker')
             ->where('identity = :identity')
             ->where('status = :status');
@@ -105,9 +105,9 @@ class Db
     /**
      * Update single field to labour.
      *
-     * @param  Labour $labour
-     * @param  string $field
-     * @param  null|string $value
+     * @param Labour $labour
+     * @param string $field
+     * @param null|string $value
      *
      * @return boolean
      */
@@ -141,20 +141,20 @@ class Db
      */
     public function getAdapter() : \Magento\Framework\DB\Adapter\AdapterInterface
     {
-        return $this->_resourceConnection->getConnection();
+        return $this->resourceConnection->getConnection();
     }
 
     /**
      * Get Table name using direct query
      *
-     * @param  string $tableName
+     * @param string $tableName
      *
      * @return string
      */
-    public function getTablename(string $tableName) : string
+    public function getTableName(string $tableName) : string
     {
         /* Create Connection */
-        $connection = $this->_resourceConnection->getConnection();
+        $connection = $this->resourceConnection->getConnection();
         $tableName = $connection->getTableName($tableName);
 
         return $tableName;

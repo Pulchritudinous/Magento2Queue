@@ -2,7 +2,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Pulchritudinous
+ * Copyright (c) 2021 Pulchritudinous
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,7 @@ abstract class WorkerAbstract
      *
      * @var Labour
      */
-    protected $_labour;
+    protected $labour;
 
     /**
      * Initial configuration.
@@ -45,7 +45,7 @@ abstract class WorkerAbstract
      */
     public function __construct(Labour $labour = null)
     {
-        $this->_labour = $labour;
+        $this->labour = $labour;
     }
 
     /**
@@ -55,7 +55,7 @@ abstract class WorkerAbstract
      */
     public function getLabour() :? Labour
     {
-        return $this->_labour;
+        return $this->labour;
     }
 
     /**

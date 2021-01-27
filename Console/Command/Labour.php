@@ -2,7 +2,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Pulchritudinous
+ * Copyright (c) 2021 Pulchritudinous
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -40,28 +40,28 @@ class Labour extends Command
      *
      * @var \Pulchritudinous\Queue\Model\Labour
      */
-    protected $labourModel = null;
+    protected $labourFactory = null;
 
     /**
      * Logger instance
      *
      * @var \Psr\Log\LoggerInterface
      */
-    private $logger;
+    protected $logger;
 
     /**
      * Server constructor.
      *
      * @parm \Psr\Log\LoggerInterface $logger
-     * @parm \Pulchritudinous\Queue\Model\Labour $labourModel
+     * @parm \Pulchritudinous\Queue\Model\LabourFactory $labourFactory
      * @param string $name
      */
     public function __construct(
         \Psr\Log\LoggerInterface $logger,
-        \Pulchritudinous\Queue\Model\Labour $labourModel,
+        \Pulchritudinous\Queue\Model\LabourFactory $labourFactory,
         $name = null
     ) {
-        $this->labourModel = $labourModel;
+        $this->labourFactory = $labourFactory;
         $this->logger = $logger;
 
         parent::__construct($name);
@@ -91,7 +91,7 @@ class Labour extends Command
         }
 
         try {
-            $labour = $this->labourModel->load($labourId);
+            $labour = $this->labourFactory->create()->load($labourId);
 
             if (!$labour->getId()) {
                 throw new \Exception('Unable to find labour');

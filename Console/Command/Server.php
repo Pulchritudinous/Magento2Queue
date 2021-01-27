@@ -2,7 +2,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Pulchritudinous
+ * Copyright (c) 2021 Pulchritudinous
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,16 +33,6 @@ use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 
-use Psr\Log\LoggerInterface;
-
-use Magento\Framework\FlagManager;
-use Magento\Framework\App\ObjectManager;
-use Magento\Framework\Stdlib\ArrayManager;
-use Magento\Framework\Filesystem\DirectoryList;
-use Magento\Framework\Lock\LockManagerInterface;
-
-use Pulchritudinous\Queue\Model\Server\Process;
-
 class Server extends Command
 {
     const FLAG_CODE = 'pulchqueue';
@@ -55,61 +45,54 @@ class Server extends Command
     /**
      * @var \Magento\Framework\Lock\LockManagerInterface
      */
-    private $lockManager = null;
+    private $lockManager;
 
     /**
      * @var string
      */
-    private $rootPath = null;
-
-    /**
-     * Object Manager instance
-     *
-     * @var \Magento\Framework\ObjectManagerInterface
-     */
-    protected $objectManager = null;
+    private $rootPath;
 
     /**
      * Worker config instance
      *
      * @var \Pulchritudinous\Queue\Helper\Worker\Config
      */
-    protected $workerConfig = null;
+    protected $workerConfig;
 
     /**
      * Worker factory instance
      *
      * @var \Pulchritudinous\Queue\Helper\Worker\Factory
      */
-    protected $workerFactory = null;
+    protected $workerFactory;
 
     /**
      * Array helper
      *
      * @var \Magento\Framework\Stdlib\ArrayManager
      */
-    private $arrHelper = null;
+    private $arrHelper;
 
     /**
      * Flag manager instance
      *
      * @var \Magento\Framework\FlagManager
      */
-    private $flagManager = null;
+    private $flagManager;
 
     /**
      * Queue instance
      *
      * @var \Pulchritudinous\Queue\Helper\Queue
      */
-    protected $queue = null;
+    protected $queue;
 
     /**
      * Db helper instance
      *
      * @var \Pulchritudinous\Queue\Helper\Db
      */
-    protected $dbHelper = null;
+    protected $dbHelper;
 
     /**
      * Logger instance
@@ -146,20 +129,21 @@ class Server extends Command
      * @param string $name
      */
     public function __construct(
-        \Magento\Framework\Lock\LockManagerInterface $lockManager,
-        \Magento\Framework\Filesystem\DirectoryList $directory,
+        \Psr\Log\LoggerInterface $logger,
+        \Magento\Framework\FlagManager $flagManager,
         \Magento\Framework\Stdlib\ArrayManager $arrHelper,
+        \Magento\Cron\Model\ScheduleFactory $scheduleFactory,
+        \Magento\Framework\Filesystem\DirectoryList $directory,
+        \Magento\Framework\Lock\LockManagerInterface $lockManager,
         \Magento\Framework\Process\PhpExecutableFinderFactory $phpExecutableFinderFactory,
+        \Pulchritudinous\Queue\Helper\Db $dbHelper,
+        \Pulchritudinous\Queue\Helper\Queue $queue,
+        \Pulchritudinous\Queue\Helper\Data $queueHelperData,
         \Pulchritudinous\Queue\Helper\Worker\Config $workerConfig,
         \Pulchritudinous\Queue\Helper\Worker\Factory $workerFactory,
-        \Pulchritudinous\Queue\Helper\Queue $queue,
-        \Pulchritudinous\Queue\Helper\Db $dbHelper,
-        \Magento\Framework\FlagManager $flagManager,
-        \Psr\Log\LoggerInterface $logger,
+        \Pulchritudinous\Queue\Console\Command\LabourFactory $labourCmdFactory,
         $name = null
     ) {
-        $objectManager = ObjectManager::getInstance();
-
         $this->lockManager = $lockManager;
         $this->workerConfig = $workerConfig;
         $this->workerFactory = $workerFactory;
@@ -168,8 +152,10 @@ class Server extends Command
         $this->arrHelper = $arrHelper;
         $this->flagManager = $flagManager;
         $this->logger = $logger;
+        $this->queueHelperData = $queueHelperData;
+        $this->labourCmdFactory = $labourCmdFactory;
+        $this->scheduleFactory = $scheduleFactory;
 
-        $this->objectManager = $objectManager;
         $this->rootPath = $directory->getRoot();
         $this->phpExecutableFinder = $phpExecutableFinderFactory->create();
 
@@ -244,7 +230,7 @@ class Server extends Command
 
         $this->lockManager->lock(self::LOCK_NAME);
 
-        $queue = $this->objectManager->create('\Pulchritudinous\Queue\Helper\Queue');
+        $queue = $this->queueHelperData->create('\Pulchritudinous\Queue\Helper\Queue');
         $processes = [];
 
         try {
@@ -351,10 +337,10 @@ class Server extends Command
      *
      * @return Process
      */
-    protected function _getProcess(\Pulchritudinous\Queue\Model\Labour $labour) : Process
+    protected function _getProcess(\Pulchritudinous\Queue\Model\Labour $labour) : \Pulchritudinous\Queue\Model\Server\Process
     {
         $config = $this->workerConfig->getWorkerConfigById($labour->getWorker());
-        $labourCmd = $this->objectManager->create(Labour::class);
+        $labourCmd = $this->labourCmdFactory->create();
 
         $labourCmd->configure();
 
@@ -379,8 +365,8 @@ class Server extends Command
     /**
      * Check if another process is allowed to start.
      *
-     * @param integer $processCount
-     * @param integer $threads
+     * @param int $processCount
+     * @param int $threads
      *
      * @return boolean
      */
@@ -395,9 +381,9 @@ class Server extends Command
     /**
      * Can receive number of labours.
      *
-     * @param integer $processCount
+     * @param int $processCount
      *
-     * @return integer
+     * @return int
      */
     protected function _canReceiveCount(int $processCount, int $threads) : int
     {
@@ -407,9 +393,9 @@ class Server extends Command
     /**
      * Add recurring labours to queue.
      *
-     * @param  OutputInterface $output
-     * @param  int $planAhead
-     * @param  int $resolution
+     * @param OutputInterface $output
+     * @param int $planAhead
+     * @param int $resolution
      *
      * @return Server
      */
@@ -479,11 +465,11 @@ class Server extends Command
     /**
      * Update date for last reschedule.
      *
-     * @param  null|integer $time
+     * @param null|int $time
      *
      * @return Server
      */
-    protected function _updateLastSchedule(int $time = null)
+    protected function _updateLastSchedule(int $time = null) : Server
     {
         if (is_int($time)) {
             $this->_lastSchedule = $time;
@@ -498,15 +484,15 @@ class Server extends Command
     /**
      * Generate date times to execute labour at.
      *
-     * @param  string $pattern
-     * @param  int $planAhead
-     * @param  int $resolution
+     * @param string $pattern
+     * @param int $planAhead
+     * @param int $resolution
      *
      * @return array
      */
     public function generateRunDates(string $pattern, int $planAhead, int $resolution) : array
     {
-        $scheduler = $this->objectManager->get('\Magento\Cron\Model\Schedule');
+        $scheduler = $this->scheduleFactory->create();
         $time = time();
         $timeAhead = $time + ($planAhead * 60);
         $interval = $resolution * 60;

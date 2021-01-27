@@ -2,7 +2,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Pulchritudinous
+ * Copyright (c) 2021 Pulchritudinous
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,40 +32,42 @@ class Config
      *
      * @var \Pulchritudinous\Queue\Config\Worker\Reader
      */
-    private $xmlReader;
+    public $xmlReader;
 
     /**
      * Array helper
      *
      * @var \Magento\Framework\Stdlib\ArrayManager
      */
-    private $arrHelper;
+    public $arrHelper;
 
     /**
      * Object manager
      *
      * @var \Magento\Framework\ObjectManager
      */
-    private $objectManager;
+    public $objectManager;
 
     /*
      * Worker configuration
      *
      * @var array
      */
-    private $config = [];
+    public $config = [];
 
     /**
-     * @param \Magento\Framework\App\Helper\Context $context
+     * @param \Magento\Framework\Stdlib\ArrayManager $arrHelper,
+     * @param \Magento\Framework\ObjectManagerInterface $objectManager,
+     * @param \Pulchritudinous\Queue\Config\Worker\Reader $reader
      */
     public function __construct(
-        \Pulchritudinous\Queue\Config\Worker\Reader $reader,
         \Magento\Framework\Stdlib\ArrayManager $arrHelper,
-        \Magento\Framework\ObjectManagerInterface $objectManager
+        \Magento\Framework\ObjectManagerInterface $objectManager,
+        \Pulchritudinous\Queue\Config\Worker\Reader $reader
     ) {
+        $this->config = $reader->read();
         $this->xmlReader = $reader;
         $this->arrHelper = $arrHelper;
-        $this->config = $reader->read();
         $this->objectManager = $objectManager;
     }
 
@@ -82,7 +84,7 @@ class Config
     /**
      * Returns worker configuration.
      *
-     * @param  string $id
+     * @param string $id
      *
      * @return null|array
      */

@@ -2,7 +2,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Pulchritudinous
+ * Copyright (c) 2021 Pulchritudinous
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -41,7 +41,7 @@ class Data extends AbstractHelper
     /**
      * Parses when the labour should be executed.
      *
-     * @param  null|int $delay
+     * @param null|int $delay
      *
      * @return int
      */

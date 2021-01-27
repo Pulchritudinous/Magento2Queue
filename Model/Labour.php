@@ -2,7 +2,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Pulchritudinous
+ * Copyright (c) 2021 Pulchritudinous
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,6 @@
 
 namespace Pulchritudinous\Queue\Model;
 
-use Magento\Framework\App\ObjectManager;
 use Magento\Framework\Exception\StateException;
 use Magento\Framework\Exception\NotFoundException;
 
@@ -33,9 +32,6 @@ use Psr\Log\LoggerInterface;
 
 use Pulchritudinous\Queue\Api\Data\LabourInterface;
 use Pulchritudinous\Queue\Exception\RescheduleException;
-use Pulchritudinous\Queue\Helper\Worker\Config as WorkerConfig;
-use Pulchritudinous\Queue\Helper\Worker\Factory As WorkerFactory;
-use Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection as LabourCollection;
 
 class Labour
     extends \Magento\Framework\Model\AbstractModel
@@ -136,42 +132,49 @@ class Labour
      *
      * @var \Psr\Log\LoggerInterface
      */
-    private $logger;
+    public $logger;
 
     /**
      * Data Object Helper instance
      *
      * @var \Magento\Framework\Api\DataObjectHelper
      */
-    private $dataObjectHelper;
+    public $dataObjectHelper;
 
     /**
      * Worker config instance
      *
      * @var \Pulchritudinous\Queue\Helper\Worker\Config
      */
-    protected $workerConfig;
+    public $workerConfig;
 
     /**
      * Worker factory instance
      *
      * @var \Pulchritudinous\Queue\Helper\Worker\Factory
      */
-    protected $workerFactory;
+    public $workerFactory;
 
     /**
      * Transaction factory
      *
      * @var \Magento\Framework\DB\TransactionFactory
      */
-    private $transactionFactory;
+    public $transactionFactory;
 
     /**
-     * Object manager
+     * Transaction factory
      *
-     * @var \Magento\Framework\ObjectManager
+     * @var \Pulchritudinous\Queue\Model\ResourceModel\Labour\CollectionFactory
      */
-    private $objectManager;
+    public $resourceCollectionFactory;
+
+    /**
+     * Queue helper data
+     *
+     * @var \Pulchritudinous\Queue\Helper\Data
+     */
+    public $queueHelperData;
 
     /**
      * Labour constructor.
@@ -182,10 +185,12 @@ class Labour
      * @param \Magento\Framework\Stdlib\ArrayManager $arrHelper
      * @param \Magento\Framework\DB\TransactionFactory $transactionFactory
      * @param \Psr\Log\LoggerInterface $logger
-     * @param \Pulchritudinous\Queue\Model\ResourceModel\Labour $resource
-     * @param \Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection $resourceCollection
+     * @param \Pulchritudinous\Queue\Helper\Data $queueHelperData
      * @param \Pulchritudinous\Queue\Helper\Worker\Config $workerConfig
      * @param \Pulchritudinous\Queue\Helper\Worker\Factory $workerFactory
+     * @param \Pulchritudinous\Queue\Model\ResourceModel\Labour $resource
+     * @param \Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection $resourceCollection
+     * @param \Pulchritudinous\Queue\Model\ResourceModel\Labour\CollectionFactory $resourceCollectionFactory
      * @param array $data
      */
     public function __construct(
@@ -195,22 +200,22 @@ class Labour
         \Magento\Framework\Stdlib\ArrayManager $arrHelper,
         \Magento\Framework\DB\TransactionFactory $transactionFactory,
         \Psr\Log\LoggerInterface $logger,
-        \Pulchritudinous\Queue\Model\ResourceModel\Labour $resource,
-        \Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection $resourceCollection,
+        \Pulchritudinous\Queue\Helper\Data $queueHelperData,
         \Pulchritudinous\Queue\Helper\Worker\Config $workerConfig,
         \Pulchritudinous\Queue\Helper\Worker\Factory $workerFactory,
+        \Pulchritudinous\Queue\Model\ResourceModel\Labour $resource,
+        \Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection $resourceCollection,
+        \Pulchritudinous\Queue\Model\ResourceModel\Labour\CollectionFactory $resourceCollectionFactory,
         array $data = []
 
     ) {
-        $objectManager = ObjectManager::getInstance();
-
-        $this->dataObjectHelper = $dataObjectHelper;
-        $this->arrHelper = $arrHelper;
-        $this->transactionFactory = $transactionFactory;
         $this->logger = $logger;
+        $this->arrHelper = $arrHelper;
         $this->workerConfig = $workerConfig;
         $this->workerFactory = $workerFactory;
-        $this->objectManager = $objectManager;
+        $this->queueHelperData = $queueHelperData;
+        $this->dataObjectHelper = $dataObjectHelper;
+        $this->transactionFactory = $transactionFactory;
 
         parent::__construct($context, $registry, $resource, $resourceCollection, $data);
     }
@@ -328,7 +333,7 @@ class Labour
     /**
      * Reschedule labour.
      *
-     * @param  boolean $detach
+     * @param boolean $detach
      *
      * @return Labour
      */
@@ -440,7 +445,7 @@ class Labour
      */
     protected function _getWhen(int $delay = null) : int
     {
-        return $this->objectManager->create('Pulchritudinous\Queue\Helper\Data')->getWhen($delay);
+        return $this->queueHelperData->getWhen($delay);
     }
 
     /**
@@ -448,9 +453,9 @@ class Labour
      *
      * @return \Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection
      */
-    public function getBatchCollection() : LabourCollection
+    public function getBatchCollection() : \Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection
     {
-        $collection = $this->objectManager->create('Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection')
+        $collection = $this->CollectionFactory->create()
             ->addFieldToFilter('parent_id', ['eq' => $this->getId()]);
 
         return $collection;
