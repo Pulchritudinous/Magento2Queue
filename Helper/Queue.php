@@ -227,7 +227,7 @@ class Queue
                 $rule = $this->arrHelper->get('rule', $config);
                 $identity = "{$labour->getWorker()}-{$labour->getIdentity()}";
 
-                if (in_array($rule, [$labour::RULE_WAIT, $labour::RULE_BATCH]) && isset($running[$identity])) {
+                if (Labour::RULE_WAIT === $rule && isset($running[$identity])) {
                     continue;
                 }
 
@@ -348,10 +348,10 @@ class Queue
      */
     public function beforeReturn(Labour $labour, array $config) : Labour
     {
-        $rule = $this->arrHelper->get('rule', $config);
+        $mode = $this->arrHelper->get('mode', $config);
         $transaction = $this->transactionFactory->create();
 
-        if ($rule === Labour::RULE_BATCH) {
+        if ($mode === Labour::RULE_BATCH) {
             $queueCollection = $this->getQueueCollection()
                 ->addFieldToFilter('identity', ['eq' => $labour->getIdentity()])
                 ->addFieldToFilter('worker', ['eq' => $labour->getWorker()]);
