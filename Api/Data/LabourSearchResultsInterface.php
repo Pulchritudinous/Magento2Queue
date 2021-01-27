@@ -23,22 +23,25 @@
  * THE SOFTWARE.
  */
 
-namespace Pulchritudinous\Queue\Setup;
+namespace Pulchritudinous\Queue\Api\Data;
 
-use Magento\Framework\Setup\ModuleContextInterface;
-use Magento\Framework\Setup\ModuleDataSetupInterface;
-use Magento\Framework\Setup\UpgradeDataInterface;
-
-class UpgradeData
-    implements UpgradeDataInterface
+interface LabourSearchResultsInterface
+    extends \Magento\Framework\Api\SearchResultsInterface
 {
     /**
-     * {@inheritdoc}
+     * Get Labour list.
+     *
+     * @return \Pulchritudinous\Queue\Api\Data\LabourInterface[]
      */
-    public function upgrade(
-        ModuleDataSetupInterface $setup,
-        ModuleContextInterface $context
-    ) {
-    }
+    public function getItems();
+
+    /**
+     * Set id list.
+     *
+     * @param \Pulchritudinous\Queue\Api\Data\LabourInterface[] $items
+     *
+     * @return $this
+     */
+    public function setItems(array $items);
 }
 

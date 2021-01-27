@@ -25,11 +25,11 @@
 
 namespace Pulchritudinous\Queue\Helper;
 
-use Pulchritudinous\Queue\Model\Labour;
-
 use Magento\Framework\Xml\Generator;
 use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\NoSuchEntityException;
+
+use Pulchritudinous\Queue\Model\Labour;
 
 class Queue
 {

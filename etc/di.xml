@@ -30,6 +30,7 @@
             <argument name="resourceCollection" xsi:type="object">Pulchritudinous\Queue\Model\ResourceModel\Labour\Collection</argument>
         </arguments>
     </type>
+
     <type name="Magento\Framework\Console\CommandList">
         <arguments>
             <argument name="commands" xsi:type="array">
@@ -38,5 +39,9 @@
             </argument>
         </arguments>
     </type>
+
+    <preference for="Pulchritudinous\Queue\Api\Data\LabourInterface" type="Pulchritudinous\Queue\Model\Data\Labour"/>
+    <preference for="Pulchritudinous\Queue\Api\LabourRepositoryInterface" type="Pulchritudinous\Queue\Model\LabourRepository"/>
+    <preference for="Pulchritudinous\Queue\Api\Data\LabourSearchResultsInterface" type="Magento\Framework\Api\SearchResults"/>
 </config>
 
