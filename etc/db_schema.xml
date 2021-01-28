@@ -26,21 +26,21 @@
 -->
 <schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
     <table engine="innodb" name="pulchritudinous_queue_labour" resource="default" comment="Labour Queue">
-        <column name="id" xsi:type="bigint" padding="20" identity="false"  nullable="true" comment="ID"/>
-        <column name="parent_id" xsi:type="bigint" padding="20" identity="false"  nullable="true" comment="Parent ID"/>
+        <column name="id" xsi:type="bigint" unsigned="true" padding="20" identity="false"  nullable="false" comment="ID"/>
+        <column name="parent_id" xsi:type="bigint" unsigned="true" padding="20" identity="false"  nullable="true" comment="Parent ID"/>
         <column name="identity" xsi:type="varchar" length="255" nullable="true" comment="Worker Identity"/>
         <column name="worker" xsi:type="varchar" length="255"  nullable="false" comment="Worker Code"/>
-        <column name="priority" xsi:type="int" padding="10" identity="false"  nullable="true" comment="Worker Priority"/>
+        <column name="priority" xsi:type="int" unsigned="true" padding="10" identity="false"  nullable="true" comment="Worker Priority"/>
         <column name="payload" xsi:type="blob" nullable="true" comment="Payload"/>
         <column name="status" xsi:type="varchar" length="255"  nullable="true" comment="Status"/>
-        <column name="attempts" xsi:type="int" padding="10" identity="false"  nullable="true" comment="Attempt"/>
-        <column name="pid" xsi:type="int" padding="10" identity="false"  nullable="true" comment="PID"/>
-        <column name="by_recurring" xsi:type="smallint" padding="5" nullable="true" comment="Is created by recurring"/>
-        <column name="execute_at" xsi:type="int" padding="10" identity="false" nullable="true" comment="Execute at"/>
-        <column name="created_at" xsi:type="int" padding="10" identity="false" nullable="true" comment="Created At"/>
-        <column name="updated_at" xsi:type="int" padding="10" identity="false" nullable="true" comment="Updated At"/>
-        <column name="started_at" xsi:type="int" padding="10" identity="false" nullable="true" comment="Updated At"/>
-        <column name="finished_at" xsi:type="int" padding="10" identity="false" nullable="true" comment="Updated At"/>
+        <column name="attempts" xsi:type="int" unsigned="true" padding="10" identity="false"  nullable="true" comment="Attempt"/>
+        <column name="pid" xsi:type="int" unsigned="true" padding="10" identity="false"  nullable="true" comment="PID"/>
+        <column name="by_recurring" xsi:type="smallint" unsigned="true" padding="5" nullable="true" comment="Is created by recurring"/>
+        <column name="execute_at" xsi:type="int" unsigned="true" padding="10" identity="false" nullable="true" comment="Execute at"/>
+        <column name="created_at" xsi:type="int" unsigned="true" padding="10" identity="false" nullable="true" comment="Created At"/>
+        <column name="updated_at" xsi:type="int" unsigned="true" padding="10" identity="false" nullable="true" comment="Updated At"/>
+        <column name="started_at" xsi:type="int" unsigned="true" padding="10" identity="false" nullable="true" comment="Updated At"/>
+        <column name="finished_at" xsi:type="int" unsigned="true" padding="10" identity="false" nullable="true" comment="Updated At"/>
 
         <constraint referenceId="PRIMARY" xsi:type="primary">
             <column name="id"/>

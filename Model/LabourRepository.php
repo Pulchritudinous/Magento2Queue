@@ -1,5 +1,4 @@
-<?php
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace Pulchritudinous\Queue\Model;
 
@@ -20,7 +19,6 @@ use Pulchritudinous\Queue\Model\ResourceModel\Labour\CollectionFactory as Labour
 
 class LabourRepository implements LabourRepositoryInterface
 {
-
     protected $dataLabourFactory;
 
     private $storeManager;
@@ -42,7 +40,6 @@ class LabourRepository implements LabourRepositoryInterface
     protected $resource;
 
     protected $dataObjectHelper;
-
 
     /**
      * @param ResourceLabour $resource
@@ -88,12 +85,7 @@ class LabourRepository implements LabourRepositoryInterface
      */
     public function save(
         \Pulchritudinous\Queue\Api\Data\LabourInterface $labour
-    ) {
-        /* if (empty($labour->getStoreId())) {
-            $storeId = $this->storeManager->getStore()->getId();
-            $labour->setStoreId($storeId);
-        } */
-
+    ) : \Pulchritudinous\Queue\Api\Data\LabourInterface {
         $labourData = $this->extensibleDataObjectConverter->toNestedArray(
             $labour,
             [],
@@ -104,25 +96,28 @@ class LabourRepository implements LabourRepositoryInterface
 
         try {
             $this->resource->save($labourModel);
-        } catch (\Exception $exception) {
+        } catch (\Throwable $e) {
             throw new CouldNotSaveException(__(
                 'Could not save the labour: %1',
-                $exception->getMessage()
+                $e->getMessage()
             ));
         }
+
         return $labourModel->getDataModel();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function get($labourId)
+    public function get($labourId) : \Pulchritudinous\Queue\Api\Data\LabourInterface
     {
         $labour = $this->labourFactory->create();
         $this->resource->load($labour, $labourId);
+
         if (!$labour->getId()) {
             throw new NoSuchEntityException(__('Labour with id "%1" does not exist.', $labourId));
         }
+
         return $labour->getDataModel();
     }
 
@@ -131,7 +126,7 @@ class LabourRepository implements LabourRepositoryInterface
      */
     public function getList(
         \Magento\Framework\Api\SearchCriteriaInterface $criteria
-    ) {
+    )  : \Pulchritudinous\Queue\Api\Data\LabourSearchResultsInterface {
         $collection = $this->labourCollectionFactory->create();
 
         $this->extensionAttributesJoinProcessor->process(
@@ -145,12 +140,14 @@ class LabourRepository implements LabourRepositoryInterface
         $searchResults->setSearchCriteria($criteria);
 
         $items = [];
+
         foreach ($collection as $model) {
             $items[] = $model->getDataModel();
         }
 
         $searchResults->setItems($items);
         $searchResults->setTotalCount($collection->getSize());
+
         return $searchResults;
     }
 
@@ -159,24 +156,25 @@ class LabourRepository implements LabourRepositoryInterface
      */
     public function delete(
         \Pulchritudinous\Queue\Api\Data\LabourInterface $labour
-    ) {
+    ) : bool {
         try {
             $labourModel = $this->labourFactory->create();
             $this->resource->load($labourModel, $labour->getLabourId());
             $this->resource->delete($labourModel);
-        } catch (\Exception $exception) {
+        } catch (\Throwable $e) {
             throw new CouldNotDeleteException(__(
                 'Could not delete the Labour: %1',
-                $exception->getMessage()
+                $e->getMessage()
             ));
         }
+
         return true;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function deleteById($labourId)
+    public function deleteById($labourId) : bool
     {
         return $this->delete($this->get($labourId));
     }
