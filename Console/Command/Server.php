@@ -81,11 +81,11 @@ class Server extends Command
     private $flagManager;
 
     /**
-     * Queue instance
+     * Queue factory
      *
-     * @var \Pulchritudinous\Queue\Helper\Queue
+     * @var \Pulchritudinous\Queue\Helper\QueueFactory
      */
-    protected $queue;
+    protected $queueFactory;
 
     /**
      * Db helper instance
@@ -116,16 +116,18 @@ class Server extends Command
     /**
      * Server constructor.
      *
-     * @param \Magento\Framework\Lock\LockManagerInterface $lockManager
-     * @param \Magento\Framework\Filesystem\DirectoryList $directory
-     * @param \Magento\Framework\Stdlib\ArrayManager $arrHelper
-     * @param \Magento\Framework\Process\PhpExecutableFinderFactory $phpExecutableFinderFactory
-     * @param \Pulchritudinous\Queue\Helper\Worker\Config $workerConfig
-     * @param \Pulchritudinous\Queue\Helper\Worker\Factory $workerFactory
-     * @param \Pulchritudinous\Queue\Helper\Queue $queue
-     * @param \Pulchritudinous\Queue\Helper\Db $dbHelper
-     * @param \Magento\Framework\FlagManager $flagManager
-     * @param \Psr\Log\LoggerInterface $logger
+     * @param \Psr\Log\LoggerInterface $logger,
+     * @param \Magento\Framework\FlagManager $flagManager,
+     * @param \Magento\Framework\Stdlib\ArrayManager $arrHelper,
+     * @param \Magento\Cron\Model\ScheduleFactory $scheduleFactory,
+     * @param \Magento\Framework\Filesystem\DirectoryList $directory,
+     * @param \Magento\Framework\Lock\LockManagerInterface $lockManager,
+     * @param \Magento\Framework\Process\PhpExecutableFinderFactory $phpExecutableFinderFactory,
+     * @param \Pulchritudinous\Queue\Helper\Db $dbHelper,
+     * @param \Pulchritudinous\Queue\Helper\QueueFactory $queueFactory,
+     * @param \Pulchritudinous\Queue\Helper\Worker\Config $workerConfig,
+     * @param \Pulchritudinous\Queue\Helper\Worker\Factory $workerFactory,
+     * @param \Pulchritudinous\Queue\Console\Command\LabourFactory $labourCmdFactory,
      * @param string $name
      */
     public function __construct(
@@ -137,8 +139,7 @@ class Server extends Command
         \Magento\Framework\Lock\LockManagerInterface $lockManager,
         \Magento\Framework\Process\PhpExecutableFinderFactory $phpExecutableFinderFactory,
         \Pulchritudinous\Queue\Helper\Db $dbHelper,
-        \Pulchritudinous\Queue\Helper\Queue $queue,
-        \Pulchritudinous\Queue\Helper\Data $queueHelperData,
+        \Pulchritudinous\Queue\Helper\QueueFactory $queueFactory,
         \Pulchritudinous\Queue\Helper\Worker\Config $workerConfig,
         \Pulchritudinous\Queue\Helper\Worker\Factory $workerFactory,
         \Pulchritudinous\Queue\Console\Command\LabourFactory $labourCmdFactory,
@@ -147,12 +148,11 @@ class Server extends Command
         $this->lockManager = $lockManager;
         $this->workerConfig = $workerConfig;
         $this->workerFactory = $workerFactory;
-        $this->queue = $queue;
+        $this->queueFactory = $queueFactory;
         $this->dbHelper = $dbHelper;
         $this->arrHelper = $arrHelper;
         $this->flagManager = $flagManager;
         $this->logger = $logger;
-        $this->queueHelperData = $queueHelperData;
         $this->labourCmdFactory = $labourCmdFactory;
         $this->scheduleFactory = $scheduleFactory;
 
@@ -217,20 +217,23 @@ class Server extends Command
             return \Magento\Framework\Console\Cli::RETURN_FAILURE;
         }
 
-        $this->queue->beforeServerStart();
+        $queue = $this->queueFactory->create();
+
+        $queue->beforeServerStart();
 
         $this->_updateLastSchedule();
 
-        if ($this->lockManager->isLocked(md5(self::LOCK_NAME))) {
+        try {
+            if (false === $this->lockManager->lock(md5(self::LOCK_NAME), 5)) {
+                throw new \Exception('Queue is already running');
+            }
+        } catch (\Exception $e) {
             $output->writeln('<error>Queue is already running</error>');
             return \Magento\Framework\Console\Cli::RETURN_FAILURE;
         }
 
         $output->writeln('Server started');
 
-        $this->lockManager->lock(self::LOCK_NAME);
-
-        $queue = $this->queueHelperData->create('\Pulchritudinous\Queue\Helper\Queue');
         $processes = [];
 
         try {
@@ -411,6 +414,7 @@ class Server extends Command
 
         $output->writeln('Scheduling recurring labors');
 
+        $queue = $this->queueFactory->create();
         $count = 0;
 
         $this->_updateLastSchedule(time());
@@ -444,7 +448,7 @@ class Server extends Command
                 $options['delay'] = $date - time();
 
                 try {
-                    $this->queue->add(
+                    $queue->add(
                         $worker['code'],
                         $payload,
                         $options
