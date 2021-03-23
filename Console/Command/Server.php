@@ -219,10 +219,6 @@ class Server extends Command
 
         $queue = $this->queueFactory->create();
 
-        $queue->beforeServerStart();
-
-        $this->_updateLastSchedule();
-
         try {
             if (false === $this->lockManager->lock(md5(self::LOCK_NAME), 5)) {
                 throw new \Exception('Queue is already running');
@@ -231,6 +227,10 @@ class Server extends Command
             $output->writeln('<error>Queue is already running</error>');
             return \Magento\Framework\Console\Cli::RETURN_FAILURE;
         }
+
+        $queue->beforeServerStart();
+
+        $this->_updateLastSchedule();
 
         $output->writeln('Server started');
 
