@@ -231,18 +231,20 @@ class Server extends Command
             return \Magento\Framework\Console\Cli::RETURN_FAILURE;
         }
 
-        $this->queue->beforeServerStart();
-
-        $this->_updateLastSchedule();
-
-        if ($this->lockManager->isLocked(md5(self::LOCK_NAME))) {
+        try {
+            if (false === $this->lockManager->lock(md5(self::LOCK_NAME), 5)) {
+                throw new \Exception('Queue is already running');
+            }
+        } catch (\Exception $e) {
             $output->writeln('<error>Queue is already running</error>');
             return \Magento\Framework\Console\Cli::RETURN_FAILURE;
         }
 
-        $output->writeln('Server started');
+        $this->queue->beforeServerStart();
 
-        $this->lockManager->lock(self::LOCK_NAME);
+        $this->_updateLastSchedule();
+
+        $output->writeln('Server started');
 
         $queue = $this->objectManager->create('\Pulchritudinous\Queue\Helper\Queue');
         $processes = [];
